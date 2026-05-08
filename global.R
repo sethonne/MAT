@@ -1,11 +1,8 @@
 library(shiny)
-library(bslib)
-library(bsicons)
 library(DT)
 library(htmltools)
-library(shinyjs)
 
-# Auto-source the R directory for modules and helpers
+# Auto-source the R directory for helpers
 sapply(list.files("R", full.names = TRUE, pattern = "\\.R$"), source)
 
 # Compute Newton's Divided Difference coefficients
@@ -19,7 +16,7 @@ divided_differences <- function(x, y) {
       for (i in j:n) {
         denom <- (x[i] - x[i - j + 1])
         if (abs(denom) < 1e-10) {
-          dd[i, j] <- 0 # Prevent division by zero
+          dd[i, j] <- 0
         } else {
           dd[i, j] <- (dd[i, j - 1] - dd[i - 1, j - 1]) / denom
         }
@@ -73,17 +70,4 @@ newton_latex <- function(dd_result) {
   }
 
   paste0("P(x) = ", terms)
-}
-
-# Shared Modal Function
-show_eq_modal <- function(eq_html) {
-  showModal(modalDialog(
-    title = tagList(bs_icon("sigma", class = "text-primary me-2"), "Full Polynomial Equation"),
-    size = "xl",
-    easyClose = TRUE,
-    tags$div(
-      class = "mathjax-container text-center",
-      HTML(eq_html)
-    )
-  ))
 }
