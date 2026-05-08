@@ -10,7 +10,6 @@ divided_differences <- function(x, y) {
   n <- length(x)
   dd <- matrix(NA, nrow = n, ncol = n)
   dd[, 1] <- y
-
   if (n > 1) {
     for (j in 2:n) {
       for (i in j:n) {
@@ -23,42 +22,31 @@ divided_differences <- function(x, y) {
       }
     }
   }
-
   coeffs <- diag(dd)
   list(coeffs = coeffs, table = dd, x = x, y = y)
 }
 
-# Evaluate the Newton polynomial at a given point or vector of points
 newton_eval <- function(dd_result, x_eval) {
   coeffs <- dd_result$coeffs
   x <- dd_result$x
   n <- length(coeffs)
-
   result <- rep(coeffs[1], length(x_eval))
   product_term <- rep(1, length(x_eval))
-
   if (n > 1) {
     for (i in 2:n) {
       product_term <- product_term * (x_eval - x[i - 1])
       result <- result + coeffs[i] * product_term
     }
   }
-
   result
 }
 
-# Generate LaTeX string for the Newton polynomial
 newton_latex <- function(dd_result) {
   coeffs <- dd_result$coeffs
   x <- dd_result$x
   n <- length(coeffs)
-
-  if (n == 0) {
-    return("P(x) = 0")
-  }
-
+  if (n == 0) return("P(x) = 0")
   terms <- paste0(round(coeffs[1], 4))
-
   if (n > 1) {
     for (i in 2:n) {
       if (abs(coeffs[i]) > 1e-10) {
@@ -68,6 +56,5 @@ newton_latex <- function(dd_result) {
       }
     }
   }
-
   paste0("P(x) = ", terms)
 }
