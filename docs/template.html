@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Divided Differences Calculator</title>
+    
+    <!-- Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons: Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Tailwind CSS (CDN for static prototyping) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- MathJax for LaTeX rendering -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        :root {
+            --background: 0 0% 100%;
+            --foreground: 222.2 84% 4.9%;
+            --card: 0 0% 100%;
+            --card-foreground: 222.2 84% 4.9%;
+            --popover: 0 0% 100%;
+            --popover-foreground: 222.2 84% 4.9%;
+            --primary: 221.2 83.2% 53.3%;
+            --primary-foreground: 210 40% 98%;
+            --secondary: 210 40% 96.1%;
+            --secondary-foreground: 222.2 47.4% 11.2%;
+            --muted: 210 40% 96.1%;
+            --muted-foreground: 215.4 16.3% 46.9%;
+            --accent: 210 40% 96.1%;
+            --accent-foreground: 222.2 47.4% 11.2%;
+            --destructive: 0 84.2% 60.2%;
+            --destructive-foreground: 210 40% 98%;
+            --border: 214.3 31.8% 91.4%;
+            --input: 214.3 31.8% 91.4%;
+            --ring: 221.2 83.2% 53.3%;
+            --radius: 0.5rem;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: hsl(var(--background));
+            color: hsl(var(--foreground));
+        }
+
+        /* Hide unselected tabs */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .sub-tab-content { display: none; }
+        .sub-tab-content.active { display: block; }
+    </style>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        border: "hsl(var(--border))",
+                        input: "hsl(var(--input))",
+                        ring: "hsl(var(--ring))",
+                        background: "hsl(var(--background))",
+                        foreground: "hsl(var(--foreground))",
+                        primary: {
+                            DEFAULT: "hsl(var(--primary))",
+                            foreground: "hsl(var(--primary-foreground))",
+                        },
+                        secondary: {
+                            DEFAULT: "hsl(var(--secondary))",
+                            foreground: "hsl(var(--secondary-foreground))",
+                        },
+                        destructive: {
+                            DEFAULT: "hsl(var(--destructive))",
+                            foreground: "hsl(var(--destructive-foreground))",
+                        },
+                        muted: {
+                            DEFAULT: "hsl(var(--muted))",
+                            foreground: "hsl(var(--muted-foreground))",
+                        },
+                        accent: {
+                            DEFAULT: "hsl(var(--accent))",
+                            foreground: "hsl(var(--accent-foreground))",
+                        },
+                        popover: {
+                            DEFAULT: "hsl(var(--popover))",
+                            foreground: "hsl(var(--popover-foreground))",
+                        },
+                        card: {
+                            DEFAULT: "hsl(var(--card))",
+                            foreground: "hsl(var(--card-foreground))",
+                        },
+                    },
+                    borderRadius: {
+                        lg: "var(--radius)",
+                        md: "calc(var(--radius) - 2px)",
+                        sm: "calc(var(--radius) - 4px)",
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-muted/40">
+    <div class="flex flex-col min-h-screen">
+        
+        <!-- Header -->
+        <header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div class="container mx-auto flex h-14 items-center justify-between px-4 md:px-8">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="calculator" class="h-5 w-5 text-primary"></i>
+                    <span class="font-semibold tracking-tight">Polynomial Interpolation</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 container mx-auto px-4 md:px-8 py-8">
+            
+            <div class="mb-8 flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold tracking-tight">Newton's Divided Differences Calculator</h1>
+                    <p class="text-muted-foreground mt-1">Interactive learning tool for polynomial interpolation using divided differences.</p>
+                </div>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="w-full flex justify-center md:justify-start mb-6">
+                <div class="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
+                    <button class="tab-btn active inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm" data-state="active" onclick="switchTab('intro')">
+                        <i data-lucide="book-open" class="w-4 h-4 mr-2"></i> Introduction
+                    </button>
+                    <button class="tab-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm" data-state="inactive" onclick="switchTab('calculate')">
+                        <i data-lucide="activity" class="w-4 h-4 mr-2"></i> Calculate & Visualize
+                    </button>
+                </div>
+            </div>
+
+            <!-- INTRODUCTION TAB -->
+            <div id="intro" class="tab-content active space-y-6">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Definition Card -->
+                    <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
+                        <div class="flex flex-col space-y-1.5 p-6">
+                            <h3 class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2">
+                                <i data-lucide="info" class="w-5 h-5 text-primary"></i> Definition
+                            </h3>
+                        </div>
+                        <div class="p-6 pt-0 text-sm text-muted-foreground space-y-4">
+                            <p><strong>Newton's Divided Differences</strong> is a method used to calculate the coefficients of an interpolating polynomial. It provides a structured way to find a polynomial curve that passes through a given set of data points.</p>
+                            
+                            <div class="rounded-md bg-muted p-6 flex justify-center items-center overflow-x-auto">
+                                <!-- MathJax equation -->
+                                <span class="text-base text-foreground font-medium">
+                                    $$P_n(x) = f[x_0] + \sum_{k=1}^{n} f[x_0, \dots, x_k] \prod_{j=0}^{k-1} (x - x_j)$$
+                                </span>
+                            </div>
+                            
+                            <p class="text-center">The divided differences are calculated recursively:</p>
+                            <div class="flex justify-center items-center overflow-x-auto">
+                                <span class="text-base text-foreground font-medium">
+                                    $$f[x_i, \dots, x_j] = \frac{f[x_{i+1}, \dots, x_j] - f[x_i, \dots, x_{j-1}]}{x_j - x_i}$$
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Applications Card -->
+                    <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
+                        <div class="flex flex-col space-y-1.5 p-6">
+                            <h3 class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2">
+                                <i data-lucide="target" class="w-5 h-5 text-primary"></i> Applications
+                            </h3>
+                        </div>
+                        <div class="p-6 pt-0 text-sm text-muted-foreground space-y-4">
+                            <div class="flex gap-3">
+                                <i data-lucide="line-chart" class="w-5 h-5 text-muted-foreground shrink-0"></i>
+                                <div>
+                                    <strong class="text-foreground">Data Curve Fitting.</strong>
+                                    <p>Interpolating a smooth curve (such as generating continuous terrain points) through specific discrete control points.</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-3">
+                                <i data-lucide="crosshair" class="w-5 h-5 text-muted-foreground shrink-0"></i>
+                                <div>
+                                    <strong class="text-foreground">Estimating Missing Values.</strong>
+                                    <p>Approximating the value of a function at an intermediate point where no actual measurement exists.</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-3">
+                                <i data-lucide="function-square" class="w-5 h-5 text-muted-foreground shrink-0"></i>
+                                <div>
+                                    <strong class="text-foreground">Numerical Analysis.</strong>
+                                    <p>Serving as the mathematical foundation for numerical differentiation and numerical integration methods.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formatting Rules Table Card -->
+                <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
+                    <div class="flex flex-col space-y-1.5 p-6">
+                        <h3 class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2">
+                            <i data-lucide="file-digit" class="w-5 h-5 text-primary"></i> Data Input Guidelines
+                        </h3>
+                        <p class="text-sm text-muted-foreground">Properly format your coordinates and inputs for the interactive data table.</p>
+                    </div>
+                    <div class="p-6 pt-0">
+                        <div class="relative w-full overflow-auto rounded-md border">
+                            <table class="w-full caption-bottom text-sm">
+                                <thead class="[&_tr]:border-b bg-muted/50">
+                                    <tr class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-1/3">Guideline</th>
+                                        <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="[&_tr:last-child]:border-0">
+                                    <tr class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                        <td class="p-4 align-middle font-medium">Distinct \(X\) Values</td>
+                                        <td class="p-4 align-middle text-muted-foreground">All \(X\) coordinates must be unique. Divided differences require non-zero denominators (\(x_j - x_i \neq 0\)).</td>
+                                    </tr>
+                                    <tr class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                        <td class="p-4 align-middle font-medium">Numerical Constants</td>
+                                        <td class="p-4 align-middle text-muted-foreground">Inputs should be resolved numerical constants (e.g., <code class="font-mono text-primary bg-muted px-1 py-0.5 rounded">2.5</code>, <code class="font-mono text-primary bg-muted px-1 py-0.5 rounded">-4.1</code>). Equations or symbolic constants like \(\pi\) must be evaluated to decimals first.</td>
+                                    </tr>
+                                    <tr class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                        <td class="p-4 align-middle font-medium">Function Sampling</td>
+                                        <td class="p-4 align-middle text-muted-foreground">To interpolate a specific function like \(f(x) = \sin(x)\), manually sample discrete points (e.g., \(X=0, Y=0\); \(X=1.57, Y=1\)) and input them into the table.</td>
+                                    </tr>
+                                    <tr class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                        <td class="p-4 align-middle font-medium">Sequential Order</td>
+                                        <td class="p-4 align-middle text-muted-foreground">While Newton's method doesn't strictly require ordered \(X\) values, sorting them from smallest to largest improves numerical stability and visualization.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CALCULATE TAB -->
+            <div id="calculate" class="tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-6">
+                    
+                    <!-- Left Panel: Calculator Controls -->
+                    <div class="flex flex-col gap-6">
+                        <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
+                            <div class="flex flex-col space-y-1.5 p-6 border-b">
+                                <h3 class="text-lg font-semibold leading-none tracking-tight">Calculator Inputs</h3>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <!-- Points Data Table -->
+                                <div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <label class="text-sm font-medium leading-none">Data Points</label>
+                                        <div class="flex items-center space-x-2">
+                                            <label for="auto-calc-switch" class="text-[11px] font-semibold tracking-wide uppercase text-muted-foreground flex items-center cursor-pointer">
+                                                <i data-lucide="activity" class="w-3 h-3 mr-1"></i> Auto-calc
+                                            </label>
+                                            <button type="button" id="auto-calc-switch" class="relative inline-flex h-4 w-7 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-primary" role="switch" aria-checked="true" onclick="toggleAutoCalc(this)">
+                                                <span class="pointer-events-none block h-3 w-3 rounded-full bg-background shadow-lg ring-0 transition-transform translate-x-3"></span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <!-- TODO: This auto-calc mode should be dynamic / toggle-able. Users can choose 'Manual Click' or 'Auto' to calculate (for both formula calc and interpolation at x calc). -->
+
+                                    <div class="border rounded-md overflow-hidden">
+                                        <table class="w-full text-sm text-left">
+                                            <thead class="bg-muted/50 text-muted-foreground border-b text-xs uppercase tracking-wider">
+                                                <tr>
+                                                    <th class="px-3 py-2 border-r font-medium text-center">X</th>
+                                                    <th class="px-3 py-2 border-r font-medium text-center">Y</th>
+                                                    <th class="px-2 py-2 w-8"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y">
+                                                <tr>
+                                                    <td class="p-0 border-r"><input type="number" value="0" class="w-full h-8 bg-transparent text-center border-none outline-none focus:ring-2 focus:ring-primary focus:z-10 relative"></td>
+                                                    <td class="p-0 border-r"><input type="number" value="2" class="w-full h-8 bg-transparent text-center border-none outline-none focus:ring-2 focus:ring-primary focus:z-10 relative"></td>
+                                                    <td class="p-0 text-center"><button class="text-muted-foreground hover:text-destructive w-full h-full flex justify-center items-center"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="p-0 border-r"><input type="number" value="2" class="w-full h-8 bg-transparent text-center border-none outline-none focus:ring-2 focus:ring-primary focus:z-10 relative"></td>
+                                                    <td class="p-0 border-r"><input type="number" value="0" class="w-full h-8 bg-transparent text-center border-none outline-none focus:ring-2 focus:ring-primary focus:z-10 relative"></td>
+                                                    <td class="p-0 text-center"><button class="text-muted-foreground hover:text-destructive w-full h-full flex justify-center items-center"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="p-0 border-r"><input type="number" value="4" class="w-full h-8 bg-transparent text-center border-none outline-none focus:ring-2 focus:ring-primary focus:z-10 relative"></td>
+                                                    <td class="p-0 border-r"><input type="number" value="3" class="w-full h-8 bg-transparent text-center border-none outline-none focus:ring-2 focus:ring-primary focus:z-10 relative"></td>
+                                                    <td class="p-0 text-center"><button class="text-muted-foreground hover:text-destructive w-full h-full flex justify-center items-center"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <button class="w-full mt-2 flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors">
+                                        <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i> Add Data Point
+                                    </button>
+                                </div>
+                                
+                                <button id="calculate-btn" style="display: none;" class="inline-flex w-full items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 mt-4">
+                                    <i data-lucide="play" class="w-4 h-4 mr-2"></i> Calculate
+                                </button>
+                                
+                                <div class="mt-2 text-xs text-muted-foreground bg-muted/40 p-2 rounded flex items-start gap-2">
+                                    <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-500 shrink-0 mt-0.5"></i>
+                                    <p>
+                                        <strong>Computational Limits:</strong> High degree polynomials may cause performance issues.
+                                        <!-- TODO: Make device-specific polynomial limits or dynamically disable auto-calc when row count is large (>50 points) to prevent browser crash (O(n^2) complexity). -->
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results Card -->
+                        <div id="results-card" class="rounded-xl border bg-card text-card-foreground shadow-sm">
+                            <div class="p-6 space-y-4">
+                                
+                                <!-- Equation Container (Hides on Plot tab) -->
+                                <div id="results-equation-container" style="display: none;" class="space-y-3 mb-6">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-sm font-medium text-muted-foreground">Resulting Equation \(P_n(x)\)</p>
+                                        <button class="text-xs text-primary hover:underline flex items-center gap-1" onclick="openEquationModal()">
+                                            <i data-lucide="maximize-2" class="w-3 h-3"></i> View Full
+                                        </button>
+                                    </div>
+                                    <div class="p-4 bg-muted/50 border border-border/50 rounded-md overflow-x-auto whitespace-nowrap text-center shadow-inner">
+                                        <span class="font-mono text-[15px] tracking-tight text-foreground">
+                                            $$P(x) = 2 - x + 0.5x(x-2) - \dots$$
+                                        </span>
+                                    </div>
+                                    <div class="h-px w-full bg-border mt-4"></div>
+                                </div>
+
+                                <!-- Live Interpolation Table (Always Visible) -->
+                                <div class="mb-2">
+                                    <h3 class="font-semibold leading-none tracking-tight">Live Interpolation</h3>
+                                </div>
+                                <p class="text-xs text-muted-foreground mb-4">Add points below to interpolate. Input \(X\) to compute \(Y\).</p>
+                                
+                                <div class="border rounded-md overflow-hidden">
+                                    <table class="w-full text-sm text-left">
+                                        <thead class="bg-primary/5 text-primary border-b text-xs uppercase tracking-wider">
+                                            <tr>
+                                                <th class="px-3 py-2 border-r font-semibold text-center w-1/2">Evaluate at \(X\)</th>
+                                                <th class="px-3 py-2 border-r font-semibold text-center w-1/2">Result \(Y\)</th>
+                                                <th class="px-2 py-2 w-8"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y">
+                                            <tr>
+                                                <td class="p-0 border-r bg-background"><input type="number" value="3.5" class="w-full h-8 bg-transparent text-center border-none outline-none focus:ring-2 focus:ring-primary focus:z-10 relative font-mono text-sm"></td>
+                                                <td class="p-0 border-r bg-muted/20"><input type="number" value="1.875" readonly class="w-full h-8 bg-transparent text-center border-none outline-none focus:ring-2 focus:ring-primary focus:z-10 relative font-bold font-mono text-sm text-primary cursor-not-allowed"></td>
+                                                <td class="p-0 text-center"><button class="text-muted-foreground hover:text-destructive w-full h-full flex justify-center items-center"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></td>
+                                            </tr>
+                                            <tr>
+                                                <td class="p-0 border-r bg-background"><input type="number" placeholder="Enter X..." class="w-full h-8 bg-transparent text-center border-none outline-none focus:ring-2 focus:ring-primary focus:z-10 relative text-muted-foreground font-mono text-sm"></td>
+                                                <td class="p-0 border-r bg-muted/20"><input type="number" placeholder="Auto..." readonly class="w-full h-8 bg-transparent text-center border-none outline-none focus:ring-2 focus:ring-primary focus:z-10 relative text-muted-foreground font-mono text-sm cursor-not-allowed"></td>
+                                                <td class="p-0 text-center"><button class="text-muted-foreground hover:text-destructive w-full h-full flex justify-center items-center"><i data-lucide="x" class="w-3.5 h-3.5"></i></button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button class="w-full mt-2 flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i> Add Interpolation Point
+                                </button>
+                                <!-- NOTE: JS logic should attach to these rows to compute P(x) dynamically based on X input. -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Visualizations & Tables -->
+                    <div class="rounded-xl border bg-card text-card-foreground shadow-sm flex flex-col">
+                        <div class="flex flex-col space-y-1.5 p-4 border-b">
+                            <div class="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-max">
+                                <button class="sub-tab-btn active inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm" data-state="active" onclick="switchSubTab('plot')">
+                                    <i data-lucide="line-chart" class="w-4 h-4 mr-2"></i> Plot
+                                </button>
+                                <button class="sub-tab-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm" data-state="inactive" onclick="switchSubTab('steps')">
+                                    <i data-lucide="list-ordered" class="w-4 h-4 mr-2"></i> Steps
+                                </button>
+                                <button class="sub-tab-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm" data-state="inactive" onclick="switchSubTab('table')">
+                                    <i data-lucide="table" class="w-4 h-4 mr-2"></i> Table
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-6 flex-1 flex flex-col min-h-[400px]">
+                            
+                            <!-- Plot Tab -->
+                            <div id="plot" class="sub-tab-content active h-full flex flex-col relative">
+                                
+                                <!-- Full-Width Equation for Plot Tab -->
+                                <div class="mb-4 bg-card border rounded-lg p-4 shadow-sm relative">
+                                    <div class="flex items-center justify-between mb-3">
+                                        <p class="text-sm font-medium text-muted-foreground">Generated Polynomial Equation</p>
+                                        <button class="text-xs text-primary hover:underline flex items-center gap-1" onclick="openEquationModal()">
+                                            <i data-lucide="maximize-2" class="w-3 h-3"></i> View Full
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Scrollable Full-width Equation -->
+                                    <div class="w-full bg-muted/50 border border-border/50 rounded-md p-4 overflow-x-auto whitespace-nowrap shadow-inner text-center">
+                                        <span class="font-mono text-[15px] tracking-tight text-foreground">
+                                            $$P(x) = 2 - x + 0.5x(x-2) - 0.1667x(x-2)(x-4) + \dots$$
+                                        </span>
+                                    </div>
+                                    <p class="text-[10px] text-muted-foreground mt-2 italic text-center">
+                                        <i data-lucide="info" class="w-3 h-3 inline mr-1"></i> This equation is shown here because the Plot tab is active.
+                                    </p>
+                                </div>
+
+                                <!-- The Plot Graph Area -->
+                                <div class="relative flex-1 flex flex-col min-h-[400px]">
+                                    <!-- Top Right Controls -->
+                                    <div class="absolute top-4 right-4 flex items-center gap-2 z-10">
+                                        <!-- Info Button Hover -->
+                                        <div class="relative group">
+                                            <button class="p-2 bg-background border shadow-sm rounded-md text-muted-foreground hover:text-foreground transition-colors focus:outline-none">
+                                                <i data-lucide="help-circle" class="w-4 h-4"></i>
+                                            </button>
+                                            <!-- Info Tooltip -->
+                                            <div class="absolute right-0 mt-2 w-64 p-4 bg-popover text-popover-foreground border shadow-lg rounded-lg text-sm hidden group-hover:block z-20">
+                                                <p class="font-semibold mb-2 flex items-center gap-1.5"><i data-lucide="mouse-pointer-click" class="w-4 h-4"></i> Interactions:</p>
+                                                <ul class="list-disc pl-5 space-y-1.5 text-muted-foreground text-xs leading-relaxed">
+                                                    <li><strong>Drag points:</strong> Move points on the plot visually to recalculate the polynomial and update the data table.</li>
+                                                    <li><strong>Settings:</strong> Toggle the visibility of elements or turn on Game Mode using the gear icon.</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Settings Dropdown Hover -->
+                                        <div class="relative group">
+                                            <button class="p-2 bg-background border shadow-sm rounded-md text-muted-foreground hover:text-foreground transition-colors focus:outline-none">
+                                                <i data-lucide="settings" class="w-4 h-4"></i>
+                                            </button>
+                                            <!-- Dropdown Menu -->
+                                            <div class="absolute right-0 mt-2 w-56 p-1 bg-popover text-popover-foreground border shadow-lg rounded-lg hidden group-hover:block z-20">
+                                                <!-- TODO: Wire up these functionalities in JS -->
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 hover:bg-muted rounded-md cursor-pointer text-sm font-medium transition-colors">
+                                                    <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4" checked>
+                                                    <span>Show points on table</span>
+                                                </label>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 hover:bg-muted rounded-md cursor-pointer text-sm font-medium transition-colors">
+                                                    <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4" checked>
+                                                    <span>Draggable Points</span>
+                                                    <!-- NOTE: When enabled, dragging points should reflect coords on the table and auto calculate the new formula -->
+                                                </label>
+                                                <div class="h-px bg-border my-1 mx-2"></div>
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 hover:bg-muted rounded-md cursor-pointer text-sm font-medium text-amber-600 hover:text-amber-700 transition-colors">
+                                                    <input type="checkbox" class="rounded border-gray-300 text-amber-600 focus:ring-amber-600 w-4 h-4">
+                                                    <span class="flex items-center gap-1.5"><i data-lucide="gamepad-2" class="w-4 h-4"></i> Gameify: Car Fuel Mode</span>
+                                                    <!-- NOTE: Car uses fuel to climb up the line created by the formula. Fuel decreases based on slope/distance. -->
+                                                </label>
+                                                <!-- Custom Car Image option -->
+                                                <label class="flex items-center gap-2.5 px-3 py-2.5 hover:bg-muted rounded-md cursor-pointer text-sm font-medium transition-colors">
+                                                    <input type="checkbox" class="rounded border-gray-300 text-primary focus:ring-primary w-4 h-4">
+                                                    <span>Custom Car Sprite</span>
+                                                    <!-- NOTE: Allows users to upload or provide a URL for a custom image/sprite to be used as the car on the plot line. -->
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg bg-muted/20 text-muted-foreground h-full min-h-[300px]">
+                                        <i data-lucide="line-chart" class="w-10 h-10 mb-4 opacity-50"></i>
+                                        <h3 class="text-lg font-medium">Interactive Plot Area</h3>
+                                        <p class="text-sm mt-1 max-w-sm text-center">The graph showing the control points and the interpolated polynomial curve will appear here.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Steps Tab -->
+                            <div id="steps" class="sub-tab-content h-full flex flex-col">
+                                <div class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg bg-muted/20 text-muted-foreground">
+                                    <i data-lucide="list-ordered" class="w-10 h-10 mb-4 opacity-50"></i>
+                                    <h3 class="text-lg font-medium">Polynomial Construction Steps</h3>
+                                    <p class="text-sm mt-1 max-w-sm text-center">Step-by-step breakdown of the Newton polynomial terms will be generated here.</p>
+                                </div>
+                            </div>
+
+                            <!-- Table Tab -->
+                            <div id="table" class="sub-tab-content h-full flex flex-col">
+                                <div class="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-muted-foreground/25 rounded-lg bg-muted/20 text-muted-foreground">
+                                    <i data-lucide="table" class="w-10 h-10 mb-4 opacity-50"></i>
+                                    <h3 class="text-lg font-medium">Divided Differences Table</h3>
+                                    <p class="text-sm mt-1 max-w-sm text-center">Tabular view of the computed divided differences at all orders will be shown here.</p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Equation Modal -->
+    <div id="equation-modal" class="fixed inset-0 z-[100] hidden bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 transition-all">
+        <div class="bg-card w-full max-w-4xl border rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b flex items-center justify-between">
+                <h3 class="font-semibold flex items-center gap-2"><i data-lucide="sigma" class="w-5 h-5 text-primary"></i> Full Polynomial Equation</h3>
+                <button onclick="closeEquationModal()" class="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-muted transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-x-auto whitespace-nowrap">
+                <div class="text-lg font-mono text-center">
+                    <!-- Placeholder for the full expanded equation -->
+                    $$P(x) = 2 - x + 0.5x(x-2) - 0.1667x(x-2)(x-4) + 0.04167x(x-2)(x-4)(x-6) - 0.00833x(x-2)(x-4)(x-6)(x-8) + \dots$$
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Auto-calc Toggle Handler
+        function toggleAutoCalc(btn) {
+            const isChecked = btn.getAttribute('aria-checked') === 'true';
+            btn.setAttribute('aria-checked', !isChecked);
+            
+            const span = btn.querySelector('span');
+            const calcBtn = document.getElementById('calculate-btn');
+
+            if (isChecked) {
+                // Turn off auto-calc
+                btn.classList.remove('bg-primary');
+                btn.classList.add('bg-input');
+                span.classList.remove('translate-x-3');
+                span.classList.add('translate-x-0');
+                
+                // Show Calculate button
+                if (calcBtn) calcBtn.style.display = 'inline-flex';
+            } else {
+                // Turn on auto-calc
+                btn.classList.remove('bg-input');
+                btn.classList.add('bg-primary');
+                span.classList.remove('translate-x-0');
+                span.classList.add('translate-x-3');
+                
+                // Hide Calculate button
+                if (calcBtn) calcBtn.style.display = 'none';
+            }
+        }
+
+        // Equation Modal Handlers
+        function openEquationModal() {
+            document.getElementById('equation-modal').classList.remove('hidden');
+        }
+        function closeEquationModal() {
+            document.getElementById('equation-modal').classList.add('hidden');
+        }
+
+        // Main Tabs Switcher
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.setAttribute('data-state', 'inactive');
+            });
+            
+            document.getElementById(tabId).classList.add('active');
+            
+            // Re-sync tab button states
+            const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+            if (activeBtn) activeBtn.setAttribute('data-state', 'active');
+        }
+
+        // Sub Tabs Switcher
+        function switchSubTab(subTabId) {
+            document.querySelectorAll('.sub-tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sub-tab-btn').forEach(el => {
+                el.setAttribute('data-state', 'inactive');
+            });
+            
+            document.getElementById(subTabId).classList.add('active');
+            event.currentTarget.setAttribute('data-state', 'active');
+
+            // Hide the equation container in the left column if 'plot' tab is active
+            const resultsEq = document.getElementById('results-equation-container');
+            if (resultsEq) {
+                if (subTabId === 'plot') {
+                    resultsEq.style.display = 'none';
+                } else {
+                    resultsEq.style.display = 'block';
+                }
+            }
+        }
+    </script>
+</body>
+</html>
