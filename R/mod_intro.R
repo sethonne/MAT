@@ -1,7 +1,7 @@
 mod_intro_ui <- function(id) {
   ns <- NS(id)
   nav_panel(
-    title = tagList(bs_icon("book-open", class = "me-2"), "Introduction"),
+    title = tagList(bs_icon("book", class = "me-2"), "Introduction"),
     tags$div(
       class = "container mx-auto px-4 md:px-8 pb-8",
       layout_columns(
