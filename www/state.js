@@ -1,0 +1,15 @@
+var plotData = null;
+var dataPoints = [{x: 0, y: 2}, {x: 2, y: 0}, {x: 4, y: 3}];
+var interpX = [3.5];
+var myChart = null;
+var curveData = [];
+var controlPts = [];
+var interpPts = [];
+var plotMinX = 0, plotMaxX = 10;
+var carT = null;
+var playing = true;
+var gameMode = false;
+var carSpeed = 1;
+var showPts = true;
+
+const ensureArray = (v) => Array.isArray(v) ? v : (v != null ? [v] : []);

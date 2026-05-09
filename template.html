@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Divided Differences Calculator</title>
+
+    <!-- Fonts: Inter -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Icons: Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- MathJax for LaTeX rendering -->
+    <script
+      id="MathJax-script"
+      async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    ></script>
+
+    {{ headContent() }}
+    <style>
+      :root {
+        --background: 0 0% 100%;
+        --foreground: 222.2 84% 4.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 222.2 84% 4.9%;
+        --popover: 0 0% 100%;
+        --popover-foreground: 222.2 84% 4.9%;
+        --primary: 221.2 83.2% 53.3%;
+        --primary-foreground: 210 40% 98%;
+        --secondary: 210 40% 96.1%;
+        --secondary-foreground: 222.2 47.4% 11.2%;
+        --muted: 210 40% 96.1%;
+        --muted-foreground: 215.4 16.3% 46.9%;
+        --accent: 210 40% 96.1%;
+        --accent-foreground: 222.2 47.4% 11.2%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 210 40% 98%;
+        --border: 214.3 31.8% 91.4%;
+        --input: 214.3 31.8% 91.4%;
+        --ring: 221.2 83.2% 53.3%;
+        --radius: 0.5rem;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: hsl(var(--background));
+        color: hsl(var(--foreground));
+      }
+      .tab-content {
+        display: none !important;
+      }
+      .tab-content.active {
+        display: block !important;
+      }
+      .sub-tab-content {
+        display: none !important;
+      }
+      .sub-tab-content.active {
+        display: flex !important;
+      }
+      .input-cell {
+        width: 100%;
+        height: 32px;
+        background: transparent;
+        text-align: center;
+        border: none;
+        outline: none;
+      }
+      .input-cell:focus {
+        box-shadow: 0 0 0 2px hsl(var(--primary));
+        border-radius: 4px;
+      }
+      .mj-buffer {
+        transition: opacity 0.2s;
+      }
+      .mj-hidden {
+        display: none !important;
+      }
+      .mj-container mjx-container {
+        text-align: left !important;
+        margin: 0 !important;
+        display: inline-block !important;
+        min-width: 100% !important;
+        position: relative !important;
+        left: 0 !important;
+        transform: none !important;
+      }
+      @media (min-width: 1024px) {
+        .mj-container mjx-container {
+          text-align: center !important;
+        }
+      }
+    </style>
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              border: "hsl(var(--border))",
+              input: "hsl(var(--input))",
+              ring: "hsl(var(--ring))",
+              background: "hsl(var(--background))",
+              foreground: "hsl(var(--foreground))",
+              primary: {
+                DEFAULT: "hsl(var(--primary))",
+                foreground: "hsl(var(--primary-foreground))",
+              },
+              secondary: {
+                DEFAULT: "hsl(var(--secondary))",
+                foreground: "hsl(var(--secondary-foreground))",
+              },
+              destructive: {
+                DEFAULT: "hsl(var(--destructive))",
+                foreground: "hsl(var(--destructive-foreground))",
+              },
+              muted: {
+                DEFAULT: "hsl(var(--muted))",
+                foreground: "hsl(var(--muted-foreground))",
+              },
+              accent: {
+                DEFAULT: "hsl(var(--accent))",
+                foreground: "hsl(var(--accent-foreground))",
+              },
+              popover: {
+                DEFAULT: "hsl(var(--popover))",
+                foreground: "hsl(var(--popover-foreground))",
+              },
+              card: {
+                DEFAULT: "hsl(var(--card))",
+                foreground: "hsl(var(--card-foreground))",
+              },
+            },
+            borderRadius: {
+              lg: "var(--radius)",
+              md: "calc(var(--radius) - 2px)",
+              sm: "calc(var(--radius) - 4px)",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="min-h-screen bg-muted/40">
+    <div class="flex flex-col min-h-screen">
+      <!-- Header -->
+      <header
+        class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+      >
+        <div
+          class="container mx-auto flex h-14 items-center justify-between px-4 md:px-8"
+        >
+          <div class="flex items-center gap-2">
+            <i data-lucide="calculator" class="h-5 w-5 text-primary"></i>
+            <span class="font-semibold tracking-tight"
+              >Polynomial Interpolation</span
+            >
+          </div>
+        </div>
+      </header>
+
+      <main class="flex-1 container mx-auto px-4 md:px-8 py-8">
+        <div
+          class="mb-8 flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between"
+        >
+          <div>
+            <h1 class="text-3xl font-bold tracking-tight">
+              Newton's Divided Differences Calculator
+            </h1>
+            <p class="text-muted-foreground mt-1">
+              Interactive learning tool for polynomial interpolation using
+              divided differences.
+            </p>
+          </div>
+        </div>
+
+        <!-- Tabs Navigation -->
+        <div class="w-full flex justify-center md:justify-start mb-6">
+          <div
+            class="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground"
+          >
+            <button
+              class="tab-btn active inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              data-state="active"
+              onclick="switchTab('intro')"
+            >
+              <i data-lucide="book-open" class="w-4 h-4 mr-2"></i> Introduction
+            </button>
+            <button
+              class="tab-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+              data-state="inactive"
+              onclick="switchTab('calculate')"
+            >
+              <i data-lucide="activity" class="w-4 h-4 mr-2"></i> Calculate &
+              Visualize
+            </button>
+          </div>
+        </div>
+
+        <!-- INTRODUCTION TAB -->
+        <div id="intro" class="tab-content active space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Definition Card -->
+            <div
+              class="rounded-xl border bg-card text-card-foreground shadow-sm"
+            >
+              <div class="flex flex-col space-y-1.5 p-6">
+                <h3
+                  class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2"
+                >
+                  <i data-lucide="info" class="w-5 h-5 text-primary"></i>
+                  Definition
+                </h3>
+              </div>
+              <div class="p-6 pt-0 text-sm text-muted-foreground space-y-4">
+                <p>
+                  <strong>Newton's Divided Differences</strong> is a method used
+                  to calculate the coefficients of an interpolating polynomial.
+                  It provides a structured way to find a polynomial curve that
+                  passes through a given set of data points.
+                </p>
+                <div
+                  class="rounded-md bg-muted p-6 flex items-center justify-start lg:justify-center px-4 overflow-x-auto overflow-y-hidden min-h-[80px] mj-container"
+                >
+                  <span class="text-base text-foreground font-medium">
+                    \[P_n(x) = f[x_0] + \sum_{k=1}^{n} f[x_0, \dots, x_k]
+                    \prod_{j=0}^{k-1} (x - x_j)\]
+                  </span>
+                </div>
+                <p class="text-center">
+                  The divided differences are calculated recursively:
+                </p>
+                <div
+                  class="flex items-center justify-start lg:justify-center px-4 overflow-x-auto overflow-y-hidden min-h-[60px] mj-container"
+                >
+                  <span class="text-base text-foreground font-medium">
+                    \[f[x_i, \dots, x_j] = \frac{f[x_{i+1}, \dots, x_j] - f[x_i,
+                    \dots, x_{j-1}]}{x_j - x_i}\]
+                  </span>
+                </div>
+              </div>
+            </div>
+            <!-- Applications Card -->
+            <div
+              class="rounded-xl border bg-card text-card-foreground shadow-sm"
+            >
+              <div class="flex flex-col space-y-1.5 p-6">
+                <h3
+                  class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2"
+                >
+                  <i data-lucide="target" class="w-5 h-5 text-primary"></i>
+                  Applications
+                </h3>
+              </div>
+              <div class="p-6 pt-0 text-sm text-muted-foreground space-y-4">
+                <div class="flex gap-3">
+                  <i
+                    data-lucide="line-chart"
+                    class="w-5 h-5 text-muted-foreground shrink-0"
+                  ></i>
+                  <div>
+                    <strong class="text-foreground">Data Curve Fitting.</strong>
+                    <p>
+                      Interpolating a smooth curve through specific discrete
+                      control points.
+                    </p>
+                  </div>
+                </div>
+                <div class="flex gap-3">
+                  <i
+                    data-lucide="crosshair"
+                    class="w-5 h-5 text-muted-foreground shrink-0"
+                  ></i>
+                  <div>
+                    <strong class="text-foreground"
+                      >Estimating Missing Values.</strong
+                    >
+                    <p>
+                      Approximating the value of a function at intermediate
+                      points.
+                    </p>
+                  </div>
+                </div>
+                <div class="flex gap-3">
+                  <i
+                    data-lucide="function-square"
+                    class="w-5 h-5 text-muted-foreground shrink-0"
+                  ></i>
+                  <div>
+                    <strong class="text-foreground">Numerical Analysis.</strong>
+                    <p>
+                      Serving as the mathematical foundation for numerical
+                      differentiation and integration.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Formatting Rules Table Card -->
+          <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
+            <div class="flex flex-col space-y-1.5 p-6">
+              <h3
+                class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2"
+              >
+                <i data-lucide="file-digit" class="w-5 h-5 text-primary"></i>
+                Data Input Guidelines
+              </h3>
+              <p class="text-sm text-muted-foreground">
+                Properly format your coordinates and inputs for the interactive
+                data table.
+              </p>
+            </div>
+            <div class="p-6 pt-0">
+              <div class="relative w-full overflow-auto rounded-md border">
+                <table class="w-full caption-bottom text-sm">
+                  <thead class="[&_tr]:border-b bg-muted/50">
+                    <tr class="border-b transition-colors hover:bg-muted/50">
+                      <th
+                        class="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-1/3"
+                      >
+                        Guideline
+                      </th>
+                      <th
+                        class="h-12 px-4 text-left align-middle font-medium text-muted-foreground"
+                      >
+                        Description
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody class="[&_tr:last-child]:border-0">
+                    <tr class="border-b transition-colors hover:bg-muted/50">
+                      <td class="p-4 align-middle font-medium">
+                        Distinct \(X\) Values
+                      </td>
+                      <td class="p-4 align-middle text-muted-foreground">
+                        All \(X\) coordinates must be unique. Divided
+                        differences require non-zero denominators (\(x_j - x_i
+                        \neq 0\)).
+                      </td>
+                    </tr>
+                    <tr class="border-b transition-colors hover:bg-muted/50">
+                      <td class="p-4 align-middle font-medium">
+                        Numerical Constants
+                      </td>
+                      <td class="p-4 align-middle text-muted-foreground">
+                        Inputs should be resolved numerical constants (e.g.,
+                        <code
+                          class="font-mono text-primary bg-muted px-1 py-0.5 rounded"
+                          >2.5</code
+                        >).
+                      </td>
+                    </tr>
+                    <tr class="border-b transition-colors hover:bg-muted/50">
+                      <td class="p-4 align-middle font-medium">
+                        Function Sampling
+                      </td>
+                      <td class="p-4 align-middle text-muted-foreground">
+                        To interpolate a specific function like \(\sin(x)\),
+                        manually sample discrete points and input them.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CALCULATE TAB -->
+        <div id="calculate" class="tab-content">
+          <div class="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-6">
+            <!-- Left Panel -->
+            <div class="flex flex-col gap-6">
+              <div
+                class="rounded-xl border bg-card text-card-foreground shadow-sm"
+              >
+                <div class="flex flex-col space-y-1.5 p-6 border-b">
+                  <h3 class="text-lg font-semibold leading-none tracking-tight">
+                    Calculator Inputs
+                  </h3>
+                </div>
+                <div class="p-6 space-y-4">
+                  <div>
+                    <div class="flex items-center justify-between mb-2">
+                      <label class="text-sm font-medium leading-none"
+                        >Data Points</label
+                      >
+                      <div class="flex items-center space-x-2">
+                        <label
+                          class="text-[11px] font-semibold tracking-wide uppercase text-muted-foreground"
+                          >Auto-calc</label
+                        >
+                        <button
+                          id="auto-calc-switch"
+                          class="relative inline-flex h-4 w-7 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors bg-primary"
+                          role="switch"
+                          aria-checked="true"
+                          onclick="toggleAutoCalc(this)"
+                        >
+                          <span
+                            class="pointer-events-none block h-3 w-3 rounded-full bg-background shadow-lg ring-0 transition-transform translate-x-3"
+                          ></span>
+                        </button>
+                      </div>
+                    </div>
+                    <div id="data-points-container"></div>
+                    <button
+                      onclick="addDataPoint()"
+                      class="w-full mt-2 flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
+                    >
+                      <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i> Add
+                      Data Point
+                    </button>
+                  </div>
+                  <button
+                    id="calculate-btn"
+                    style="display: none"
+                    onclick="Shiny.setInputValue('calc_btn', Math.random())"
+                    class="inline-flex w-full items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 mt-4"
+                  >
+                    <i data-lucide="play" class="w-4 h-4 mr-2"></i> Calculate
+                  </button>
+                </div>
+              </div>
+
+              <!-- Results Card -->
+              <div
+                id="results-card"
+                class="rounded-xl border bg-card text-card-foreground shadow-sm"
+              >
+                <div class="p-6 space-y-4">
+                  <div
+                    id="results-equation-container"
+                    style="display: none"
+                    class="space-y-3 mb-6"
+                  >
+                    <div class="flex items-center justify-between">
+                      <p class="text-sm font-medium text-muted-foreground">
+                        Resulting Equation
+                      </p>
+                      <button
+                        class="text-xs text-primary hover:underline flex items-center gap-1"
+                        onclick="openEquationModal()"
+                      >
+                        <i data-lucide="maximize-2" class="w-3 h-3"></i> View
+                        Full
+                      </button>
+                    </div>
+                    <div
+                      class="p-4 bg-muted/50 border border-border/50 rounded-md overflow-x-auto overflow-y-hidden whitespace-nowrap shadow-inner min-h-[64px] flex items-center justify-start px-4 mj-container"
+                    >
+                      <span id="eq-sidebar-buf1" class="mj-buffer"
+                        >\[P_n(x) = \dots\]</span
+                      >
+                      <span
+                        id="eq-sidebar-buf2"
+                        class="mj-buffer mj-hidden"
+                      ></span>
+                    </div>
+                  </div>
+                  <h3 class="font-semibold leading-none tracking-tight">
+                    Live Interpolation
+                  </h3>
+                  <div id="interp-points-container"></div>
+                  <button
+                    onclick="addInterpPoint()"
+                    class="w-full mt-2 flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
+                  >
+                    <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i> Add
+                    Interpolation Point
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Panel -->
+            <div
+              class="rounded-xl border bg-card text-card-foreground shadow-sm flex flex-col"
+            >
+              <div class="flex flex-col space-y-1.5 p-4 border-b">
+                <div
+                  class="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-max"
+                >
+                  <button
+                    class="sub-tab-btn active inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                    data-state="active"
+                    onclick="switchSubTab('plot', this)"
+                  >
+                    <i data-lucide="line-chart" class="w-4 h-4 mr-2"></i> Plot
+                  </button>
+                  <button
+                    class="sub-tab-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                    data-state="inactive"
+                    onclick="switchSubTab('steps', this)"
+                  >
+                    <i data-lucide="list-ordered" class="w-4 h-4 mr-2"></i>
+                    Steps
+                  </button>
+                  <button
+                    class="sub-tab-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                    data-state="inactive"
+                    onclick="switchSubTab('table', this)"
+                  >
+                    <i data-lucide="table" class="w-4 h-4 mr-2"></i> Table
+                  </button>
+                </div>
+              </div>
+              <div
+                id="sub-tabs-root"
+                class="p-6 flex-1 flex flex-col min-h-[400px]"
+              >
+                <!-- Plot Tab -->
+                <div
+                  id="plot"
+                  class="sub-tab-content active flex flex-col flex-1 min-h-0 relative"
+                >
+                  <div
+                    class="mb-4 bg-card border rounded-lg p-4 shadow-sm relative"
+                  >
+                    <div class="flex items-center justify-between mb-3">
+                      <p class="text-sm font-medium text-muted-foreground">
+                        Generated Equation
+                      </p>
+                      <button
+                        class="text-xs text-primary hover:underline flex items-center gap-1"
+                        onclick="openEquationModal()"
+                      >
+                        <i data-lucide="maximize-2" class="w-3 h-3"></i> View
+                        Full
+                      </button>
+                    </div>
+                    <div
+                      class="w-full bg-muted/50 border rounded-md p-4 overflow-x-auto whitespace-nowrap mj-container flex items-center justify-start lg:justify-center px-4"
+                    >
+                      <span id="eq-plot-buf1" class="mj-buffer"
+                        >\[P_n(x) = \dots\]</span
+                      >
+                      <span
+                        id="eq-plot-buf2"
+                        class="mj-buffer mj-hidden"
+                      ></span>
+                    </div>
+                  </div>
+                  <div class="flex-1 min-h-[400px] relative">
+                    <div class="absolute top-4 right-4 z-10">
+                      <button
+                        onclick="toggleSettingsDropdown()"
+                        class="p-2 bg-background border shadow-sm rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <i data-lucide="settings" class="w-4 h-4"></i>
+                      </button>
+                      <div
+                        id="settings-dropdown"
+                        class="absolute right-0 mt-2 w-56 p-1 bg-popover text-popover-foreground border shadow-lg rounded-lg hidden z-20"
+                      >
+                        <div id="game-controls"></div>
+                      </div>
+                    </div>
+                    <canvas
+                      id="animation-canvas"
+                      class="w-full h-full"
+                    ></canvas>
+                  </div>
+                </div>
+                <!-- Steps Tab -->
+                <div
+                  id="steps"
+                  class="sub-tab-content flex flex-col flex-1 min-h-0 overflow-y-auto p-4"
+                >
+                  <div id="steps-container" class="space-y-4"></div>
+                </div>
+                <!-- Table Tab -->
+                <div
+                  id="table"
+                  class="sub-tab-content flex flex-col flex-1 min-h-0 overflow-y-auto p-4"
+                >
+                  <div id="summary-table-container" class="space-y-4"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Equation Modal -->
+    <div
+      id="equation-modal"
+      class="fixed inset-0 z-[100] hidden bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-card w-full max-w-4xl border rounded-xl shadow-2xl flex flex-col max-h-[90vh]"
+      >
+        <div class="p-4 border-b flex items-center justify-between">
+          <h3 class="font-semibold flex items-center gap-2">
+            <i data-lucide="sigma" class="w-5 h-5 text-primary"></i> Full
+            Equation
+          </h3>
+          <button
+            onclick="closeEquationModal()"
+            class="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+        <div
+          class="p-6 overflow-x-auto whitespace-nowrap mj-container flex items-center justify-center"
+        >
+          <span id="eq-modal-buf1" class="mj-buffer">\[P_n(x) = \dots\]</span>
+          <span id="eq-modal-buf2" class="mj-buffer mj-hidden"></span>
+        </div>
+      </div>
+    </div>
+
+    <script src="state.js"></script>
+    <script src="ui.js"></script>
+    <script src="tables.js"></script>
+    <script src="steps.js"></script>
+    <script src="chart.js"></script>
+  </body>
+</html>
