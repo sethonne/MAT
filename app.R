@@ -2,9 +2,7 @@
 source("global.R")
 
 ui <- htmlTemplate(
-  "template.html",
-  steps_output     = uiOutput("steps_output"),
-  dd_table         = DTOutput("dd_table")
+  "template.html"
 )
 
 server <- function(input, output, session) {
@@ -100,6 +98,7 @@ server <- function(input, output, session) {
 
     if (is.null(res) || nrow(pts) < 2) {
       session$sendCustomMessage("update_plot_data", list(error = TRUE))
+      session$sendCustomMessage("update_steps_data", list(error = TRUE))
       return()
     }
 
@@ -113,6 +112,11 @@ server <- function(input, output, session) {
       ip_y <- newton_eval(res, ip_x)
     }
 
+    # Convert DD table matrix to list-of-lists for JSON
+    dd_rows <- lapply(1:nrow(res$table), function(r) {
+      as.list(unname(res$table[r, ]))
+    })
+
     session$sendCustomMessage("update_plot_data", list(
       error = FALSE,
       xs = xs,
@@ -124,47 +128,21 @@ server <- function(input, output, session) {
       min_x = min_x,
       max_x = max_x
     ))
+
+    # Send DD data for step-by-step rendering in JS
+    session$sendCustomMessage("update_steps_data", list(
+      error = FALSE,
+      pts_x = pts$x,
+      pts_y = pts$y,
+      dd_table = dd_rows,
+      dd_coeffs = res$coeffs
+    ))
   })
 
-  # --- DD Table ---
-  output$dd_table <- renderDT({
-    res <- dd_result()
-    if (is.null(res)) {
-      return(NULL)
-    }
-    df <- as.data.frame(res$table)
-    df[] <- lapply(df, function(x) round(x, 4))
-    colnames(df) <- c("f(x)", paste0("Order ", seq_len(ncol(df) - 1)))
-    df <- cbind(X = res$x, df)
-    datatable(df, options = list(dom = "t", paging = FALSE, ordering = FALSE), rownames = FALSE)
-  })
 
-  # --- Steps ---
-  output$steps_output <- renderUI({
-    res <- dd_result()
-    if (is.null(res)) {
-      return(tags$div(class = "text-center text-muted-foreground p-8", tags$h3("Awaiting calculation...", class = "text-lg font-medium"), tags$p("Input data points and calculate to see steps.")))
-    }
-    n <- length(res$x)
-    coeffs <- res$coeffs
-    step_cards <- lapply(seq_len(n), function(i) {
-      if (i == 1) {
-        val <- paste0("$$f[x_0] = y_0 = ", round(coeffs[i], 4), "$$")
-      } else {
-        val <- paste0("$$f[x_0, \\dots, x_{", i - 1, "}] = ", round(coeffs[i], 4), "$$")
-      }
-      tags$div(
-        class = "rounded-lg border bg-card p-4 mb-3",
-        tags$h4(paste("Order", i - 1), class = "font-semibold text-sm mb-2 text-muted-foreground"),
-        tags$div(class = "text-center", HTML(val))
-      )
-    })
-    tagList(step_cards)
-  })
 
   # Ensure outputs render even when hidden in inactive tabs
-  outputOptions(output, "steps_output", suspendWhenHidden = FALSE)
-  outputOptions(output, "dd_table", suspendWhenHidden = FALSE)
+
 }
 
 shinyApp(ui = ui, server = server)

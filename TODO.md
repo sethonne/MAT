@@ -19,7 +19,7 @@ Make each data point on the Chart.js plot **interactable / draggable**. Dragging
 
 ---
 
-## 2. 📝 Step-by-Step Solution
+## 2. [x] 📝 Step-by-Step Solution — **COMPLETED**
 
 **Priority:** High
 
@@ -46,6 +46,7 @@ Replace the current minimal steps output with a **complete, verbose, non-redunda
    - With actual coefficient values plugged in.
 
 ### Display Rules:
+
 - If the number of steps exceeds a threshold (e.g., > 5 orders), **collapse middle steps** behind an ellipsis with an "Expand all" toggle.
 - Each step card should show: order label, formula template, values plugged in, and result.
 - Use MathJax for formula rendering.
@@ -60,7 +61,7 @@ Replace the current minimal steps output with a **complete, verbose, non-redunda
 Add an **error estimation** for interpolated points, analogous to the Lagrange remainder / Newton form error bound.
 
 - [ ] Display the error formula:  
-  `E(x) = f[x₀, x₁, ..., xₙ, x] · ∏(x - xᵢ)`
+       `E(x) = f[x₀, x₁, ..., xₙ, x] · ∏(x - xᵢ)`
 - [ ] For each interpolation point, show the estimated error magnitude (requires the next-order divided difference or a known `f^(n+1)` bound).
 - [ ] If the true function is unknown (just data points), note that the error bound is an approximation based on the next DD term.
 - [ ] Show error value in the interpolation results table (new column).
@@ -68,13 +69,14 @@ Add an **error estimation** for interpolated points, analogous to the Lagrange r
 
 ---
 
-## 4. 📋 Divided Difference Summary Tables
+## 4. [x] 📋 Divided Difference Summary Tables — **COMPLETED**
 
 **Priority:** Medium
 
 Enhance the existing DD table tab with a **step-by-step summary view** that breaks down the full DD table into digestible chunks.
 
 ### Layout:
+
 - Show sub-tables: "Order 1" (pairs), "Order 2" (triples), ..., "Order n-1".
 - Each sub-table lists the inputs, the formula applied, and the resulting value.
 - **Ellipsis rule:** If there are more than **4–5 columns** of divided differences, collapse intermediate columns with `⋯` and show only the first 2 and last 2 orders. Provide an "Expand" button to reveal all.
@@ -89,6 +91,7 @@ Enhance the existing DD table tab with a **step-by-step summary view** that brea
 A toggle button (e.g., in the header or settings) that reveals **all current calculations being performed by JS**, especially useful for the car simulation.
 
 ### What to show:
+
 - Current polynomial evaluation: `P(x) = ...` with live `x` value from car position.
 - Car physics: `slope = atan2(dy, dx)`, pixel interpolation formulas.
 - Curve sampling: "800 points from x_min to x_max via `newton_eval()`".
@@ -96,6 +99,7 @@ A toggle button (e.g., in the header or settings) that reveals **all current cal
 - Animation: `carT += speed * 0.002 * dt`.
 
 ### UI:
+
 - Floating panel or slide-out drawer.
 - Each formula block is collapsible.
 - Live-updating values highlighted (e.g., pulsing text or color change on value change).
@@ -110,7 +114,7 @@ Add hard caps on data point count and value ranges to prevent performance degrad
 
 - [ ] **Max data points:** Cap at a reasonable limit (e.g., **20 points**). Disable "Add Data Point" button when limit is reached. Show a tooltip explaining why.
 - [ ] **Value range:** Restrict X and Y inputs to a sane range (e.g., `-10000 ≤ x, y ≤ 10000`). Clamp or reject out-of-range values with inline validation feedback.
-- [ ] **Duplicate X detection:** Already partially handled (`length(unique(x_vals)) != length(x_vals)` in R). Surface this as a clear inline error in the data table (highlight the offending row red).
+- [x] **Duplicate X detection:** Already partially handled (`length(unique(x_vals)) != length(x_vals)` in R). Surface this as a clear inline error in the data table (highlight the offending row red).
 - [ ] **Interpolation point limits:** Similar cap (e.g., **10 interpolation points**).
 - [ ] Enforce limits in **both JS (client-side UX)** and **R (server-side safety)**.
 
@@ -118,11 +122,11 @@ Add hard caps on data point count and value ranges to prevent performance degrad
 
 ## Implementation Notes
 
-| Feature | JS Responsibility | R Responsibility |
-|---|---|---|
-| Draggable points | All drag logic, hit detection, visual feedback, state sync | Receives updated points, recomputes DD |
-| Step-by-step | Formatting, MathJax rendering, collapse/expand UI | Provides the DD table + coefficients |
-| Error bound | Display + formatting | Compute error terms |
-| Summary tables | Rendering, ellipsis logic, expand/collapse | Provides raw DD matrix |
-| Nerd mode formulas | Everything — read from live JS state | N/A (these are JS-side computations) |
-| Input limits | Client-side enforcement, UI feedback | Server-side validation fallback |
+| Feature            | JS Responsibility                                          | R Responsibility                       |
+| ------------------ | ---------------------------------------------------------- | -------------------------------------- |
+| Draggable points   | All drag logic, hit detection, visual feedback, state sync | Receives updated points, recomputes DD |
+| Step-by-step       | Formatting, MathJax rendering, collapse/expand UI          | Provides the DD table + coefficients   |
+| Error bound        | Display + formatting                                       | Compute error terms                    |
+| Summary tables     | Rendering, ellipsis logic, expand/collapse                 | Provides raw DD matrix                 |
+| Nerd mode formulas | Everything — read from live JS state                       | N/A (these are JS-side computations)   |
+| Input limits       | Client-side enforcement, UI feedback                       | Server-side validation fallback        |

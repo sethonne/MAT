@@ -46,13 +46,33 @@ newton_latex <- function(dd_result) {
   x <- dd_result$x
   n <- length(coeffs)
   if (n == 0) return("P(x) = 0")
+  
   terms <- paste0(round(coeffs[1], 4))
+  
   if (n > 1) {
     for (i in 2:n) {
       if (abs(coeffs[i]) > 1e-10) {
-        coeff_str <- sprintf("%+.4g", coeffs[i])
-        factors <- paste0(sprintf("(x - %g)", x[1:(i - 1)]), collapse = "")
-        terms <- paste0(terms, " ", coeff_str, factors)
+        # Format coefficient with sign
+        val <- coeffs[i]
+        sign_str <- if (val >= 0) " + " else " - "
+        abs_val <- abs(val)
+        
+        # Omit coefficient if it's 1 (since k >= 2, there are always factors)
+        coeff_str <- if (abs(abs_val - 1) < 1e-10) "" else sprintf("%.4g", abs_val)
+        
+        # Build factors (x - x_j)
+        factors <- ""
+        for (j in 1:(i - 1)) {
+          xj <- x[j]
+          if (abs(xj) < 1e-10) {
+            factors <- paste0(factors, "x")
+          } else if (xj > 0) {
+            factors <- paste0(factors, sprintf("(x - %g)", xj))
+          } else {
+            factors <- paste0(factors, sprintf("(x + %g)", abs(xj)))
+          }
+        }
+        terms <- paste0(terms, sign_str, coeff_str, factors)
       }
     }
   }

@@ -1,3 +1,11 @@
+const MAX_POINTS = 20;
+const MIN_VAL = -10000;
+const MAX_VAL = 10000;
+
+function clamp(val) {
+  return Math.min(Math.max(val, MIN_VAL), MAX_VAL);
+}
+
 function renderDataPoints() {
   let html = `<div class="border rounded-md overflow-hidden">
                 <table class="w-full text-sm text-left">
@@ -25,6 +33,11 @@ function renderDataPoints() {
   });
   
   html += `</tbody></table></div>`;
+  
+  if (dataPoints.length >= MAX_POINTS) {
+    html += `<p class="text-[10px] text-amber-600 mt-1 font-medium italic"><i data-lucide="info" class="w-3 h-3 inline mr-1"></i> Maximum of ${MAX_POINTS} points reached.</p>`;
+  }
+
   const el = document.getElementById('data-points-container');
   if (el) el.innerHTML = html;
   
@@ -35,14 +48,16 @@ function renderDataPoints() {
 function updateDataPoint(idx, col, val) {
   let num = parseFloat(val);
   if (!isNaN(num)) {
-    dataPoints[idx][col] = num;
+    dataPoints[idx][col] = clamp(num);
     Shiny.setInputValue('client_data_points', dataPoints, {priority: 'event'});
   }
 }
 
 function addDataPoint() {
-  dataPoints.push({x: 0, y: 0});
-  renderDataPoints();
+  if (dataPoints.length < MAX_POINTS) {
+    dataPoints.push({x: 0, y: 0});
+    renderDataPoints();
+  }
 }
 
 function removeDataPoint(idx) {
@@ -85,6 +100,11 @@ function renderInterpPoints() {
   });
   
   html += `</tbody></table></div>`;
+
+  if (interpX.length >= 10) {
+    html += `<p class="text-[10px] text-amber-600 mt-1 font-medium italic"><i data-lucide="info" class="w-3 h-3 inline mr-1"></i> Limit of 10 interpolation points.</p>`;
+  }
+
   let el = document.getElementById('interp-points-container');
   if (el) el.innerHTML = html;
   if (window.lucide) lucide.createIcons();
@@ -93,15 +113,17 @@ function renderInterpPoints() {
 function updateInterpPoint(idx, val) {
   let num = parseFloat(val);
   if (!isNaN(num)) {
-    interpX[idx] = num;
+    interpX[idx] = clamp(num);
     Shiny.setInputValue('client_interp_x', interpX, {priority: 'event'});
   }
 }
 
 function addInterpPoint() {
-  interpX.push(0);
-  renderInterpPoints();
-  Shiny.setInputValue('client_interp_x', interpX, {priority: 'event'});
+  if (interpX.length < 10) {
+    interpX.push(0);
+    renderInterpPoints();
+    Shiny.setInputValue('client_interp_x', interpX, {priority: 'event'});
+  }
 }
 
 function removeInterpPoint(idx) {

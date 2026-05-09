@@ -113,12 +113,13 @@ function switchTab(tabId) {
     }
   });
   
+  const gameCtrl = document.getElementById('game-controls');
   if (tabId === 'tab-game') {
     gameMode = true;
-    document.getElementById('game-controls').classList.remove('hidden');
+    if (gameCtrl) gameCtrl.classList.remove('hidden');
   } else {
     gameMode = false;
-    document.getElementById('game-controls').classList.add('hidden');
+    if (gameCtrl) gameCtrl.classList.add('hidden');
   }
   
   Shiny.setInputValue('active_tab', tabId);
@@ -129,6 +130,7 @@ function switchTab(tabId) {
 
 function switchSubTab(subTabId) {
   document.querySelectorAll('.sub-tab-content').forEach(el => {
+    el.classList.remove('active');
     el.style.display = 'none';
     el.style.setProperty('display', 'none', 'important');
   });
@@ -141,8 +143,13 @@ function switchSubTab(subTabId) {
   
   const targetEl = document.getElementById(subTabId);
   if (targetEl) {
-    targetEl.style.display = 'block';
-    targetEl.style.setProperty('display', 'block', 'important');
+    targetEl.classList.add('active');
+    const isFlex = targetEl.classList.contains('flex');
+    const displayMode = isFlex ? 'flex' : 'block';
+    targetEl.style.display = displayMode;
+    targetEl.style.setProperty('display', displayMode, 'important');
+  } else {
+    console.warn('[UI] Target element NOT found:', subTabId);
   }
   
   document.querySelectorAll('.sub-tab-btn').forEach(el => {
