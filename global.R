@@ -2,9 +2,7 @@ library(shiny)
 library(DT)
 library(htmltools)
 
-# Auto-source the R directory for helpers
-sapply(list.files("R", full.names = TRUE, pattern = "\\.R$"), source)
-
+# Core math logic for Newton's Divided Differences
 # Compute Newton's Divided Difference coefficients
 divided_differences <- function(x, y) {
   n <- length(x)

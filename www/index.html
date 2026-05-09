@@ -562,9 +562,52 @@
                       </button>
                       <div
                         id="settings-dropdown"
-                        class="absolute right-0 mt-2 w-56 p-1 bg-popover text-popover-foreground border shadow-lg rounded-lg hidden z-20"
+                        class="absolute right-0 mt-2 w-64 p-2 bg-popover text-popover-foreground border shadow-lg rounded-lg hidden z-50"
                       >
-                        <div id="game-controls"></div>
+                        <div class="space-y-1">
+                          <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Display Options
+                          </div>
+                          <label class="flex items-center gap-2.5 px-2 py-2 hover:bg-muted rounded-md cursor-pointer text-sm transition-colors">
+                            <input type="checkbox" id="chk-show-pts" class="rounded border-input text-primary focus:ring-primary w-4 h-4" checked>
+                            <span>Show Data Points</span>
+                          </label>
+                          <label class="flex items-center gap-2.5 px-2 py-2 hover:bg-muted rounded-md cursor-pointer text-sm transition-colors">
+                            <input type="checkbox" id="chk-game-mode" class="rounded border-input text-primary focus:ring-primary w-4 h-4" onchange="gameMode = this.checked; updateChart();">
+                            <span class="flex items-center gap-1.5"><i data-lucide="gamepad-2" class="w-3.5 h-3.5"></i> Game Mode</span>
+                          </label>
+                          <label class="flex items-center gap-2.5 px-2 py-2 hover:bg-muted rounded-md cursor-pointer text-sm transition-colors">
+                            <input type="checkbox" id="chk-drag-pts" class="rounded border-input text-primary focus:ring-primary w-4 h-4">
+                            <span>Draggable Points</span>
+                          </label>
+                          
+                          <div class="h-px bg-border my-1.5"></div>
+                          
+                          <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            Animation
+                          </div>
+                          <label class="flex items-center gap-2.5 px-2 py-2 hover:bg-muted rounded-md cursor-pointer text-sm transition-colors">
+                            <input type="checkbox" id="chk-playing" class="rounded border-input text-primary focus:ring-primary w-4 h-4" checked onchange="toggleAnimation()">
+                            <span>Playing</span>
+                          </label>
+                          <div class="px-2 py-2">
+                            <div class="flex items-center justify-between mb-1.5">
+                              <span class="text-sm">Speed</span>
+                              <span id="speed-val" class="text-xs font-mono text-muted-foreground">1.0x</span>
+                            </div>
+                            <input 
+                              type="range" 
+                              id="range-speed" 
+                              min="0.1" 
+                              max="3" 
+                              step="0.1" 
+                              value="1" 
+                              class="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                              oninput="document.getElementById('speed-val').innerText = parseFloat(this.value).toFixed(1) + 'x'; updateSpeed(this.value);"
+                            >
+                          </div>
+                        </div>
+                        <div id="game-controls" class="hidden"></div>
                       </div>
                     </div>
                     <canvas

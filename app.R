@@ -2,7 +2,7 @@
 source("global.R")
 
 ui <- htmlTemplate(
-  "template.html"
+  "www/index.html"
 )
 
 server <- function(input, output, session) {
