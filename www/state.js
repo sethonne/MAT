@@ -10,7 +10,9 @@ var carT = null;
 var playing = true;
 var gameMode = false;
 var carSpeed = 1;
+var carDirection = 1;
 var showPts = true;
+
 
 var dragEnabled = false;
 var dragIdx = -1;

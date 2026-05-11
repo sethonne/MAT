@@ -60,6 +60,7 @@ document.addEventListener('click', function(e) {
   if (!wrapper.contains(e.target)) dd.classList.add('hidden');
 });
 
+
 function openEquationModal() {
   document.getElementById('equation-modal').classList.remove('hidden');
   setTimeout(function() { if (window.MathJax) MathJax.typesetPromise(); }, 50);

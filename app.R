@@ -109,8 +109,16 @@ server <- function(input, output, session) {
       return()
     }
 
-    min_x <- min(pts$x)
-    max_x <- max(pts$x)
+    min_x_data <- min(pts$x)
+    max_x_data <- max(pts$x)
+    range_x <- max_x_data - min_x_data
+    if (range_x == 0) range_x <- 1
+    
+    # functional +- padding depending on data point spread
+    padding <- max(1, range_x * 0.05) 
+    
+    min_x <- min_x_data - padding
+    max_x <- max_x_data + padding
     xs <- seq(min_x, max_x, length.out = 800)
     ys <- newton_eval(res, xs)
 

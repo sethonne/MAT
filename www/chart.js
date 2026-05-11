@@ -9,6 +9,7 @@ function toggleAnimation() {
 function resetAnimation() {
   if (plotData && plotData.xs && plotData.xs.length > 0) {
     carT = plotMinX + 0.2;
+    carDirection = 1;
   }
 }
 
@@ -80,9 +81,13 @@ const carPlugin = {
     const factor = (p2.x - p1.x === 0) ? 0 : (t - p1.x) / (p2.x - p1.x);
     const cy = p1.y + factor * (p2.y - p1.y);
     
-    const dy = p2.y - p1.y;
-    const dx = p2.x - p1.x;
-    const angle = Math.atan2(-dy, dx); 
+    const px1 = xAxis.getPixelForValue(p1.x);
+    const py1 = yAxis.getPixelForValue(p1.y);
+    const px2 = xAxis.getPixelForValue(p2.x);
+    const py2 = yAxis.getPixelForValue(p2.y);
+    const pxDx = px2 - px1;
+    const pxDy = py2 - py1;
+    const angle = Math.atan2(pxDy, pxDx);
     
     const px = xAxis.getPixelForValue(t);
     const py = yAxis.getPixelForValue(cy);
@@ -90,27 +95,81 @@ const carPlugin = {
     ctx.save();
     ctx.translate(px, py);
     ctx.rotate(angle);
+    
+    if (carDirection < 0) {
+      ctx.scale(-1, 1);
+    }
 
-    const cw = 64;
-    const ch = 20;
-    const lift = ch * 0.64;
+    // --- Side-view car ---
+    const cw = 60;  // car width
+    const ch = 18;  // body height
+    const lift = ch + 4; // lift car above the curve (wheels sit on curve)
     ctx.translate(0, -lift);
     
+    // Body (main rectangle with rounded corners)
     ctx.fillStyle = '#FF7F2A';
-    ctx.fillRect(-cw/2, -ch/2, cw, ch);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#000';
-    ctx.strokeRect(-cw/2, -ch/2, cw, ch);
+    ctx.beginPath();
+    const bx = -cw/2, by = 0, bw = cw, bh = ch, br = 3;
+    ctx.moveTo(bx + br, by);
+    ctx.lineTo(bx + bw - br, by);
+    ctx.arcTo(bx + bw, by, bx + bw, by + br, br);
+    ctx.lineTo(bx + bw, by + bh - br);
+    ctx.arcTo(bx + bw, by + bh, bx + bw - br, by + bh, br);
+    ctx.lineTo(bx + br, by + bh);
+    ctx.arcTo(bx, by + bh, bx, by + bh - br, br);
+    ctx.lineTo(bx, by + br);
+    ctx.arcTo(bx, by, bx + br, by, br);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#c45a10';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
     
-    ctx.fillStyle = '#A0C4FF';
-    ctx.fillRect(cw*0.1, -ch/2, cw*0.3, ch);
-    ctx.strokeRect(cw*0.1, -ch/2, cw*0.3, ch);
+    // Cabin / roof (trapezoid)
+    ctx.fillStyle = '#A0D4FF';
+    ctx.beginPath();
+    ctx.moveTo(-cw * 0.15, 0);       // bottom-left of cabin
+    ctx.lineTo(-cw * 0.08, -ch * 0.7); // top-left
+    ctx.lineTo( cw * 0.22, -ch * 0.7); // top-right
+    ctx.lineTo( cw * 0.32, 0);         // bottom-right
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#5a9fd4';
+    ctx.lineWidth = 1;
+    ctx.stroke();
     
+    // Wheels
+    const wheelR = 5;
+    const wheelY = ch + 1;
     ctx.fillStyle = '#333';
-    ctx.fillRect(-cw/2+cw*0.1, -ch/2-ch*0.2, cw*0.25, ch*0.2);
-    ctx.fillRect(-cw/2+cw*0.1, ch/2, cw*0.25, ch*0.2);
-    ctx.fillRect(cw/2-cw*0.3, -ch/2-ch*0.2, cw*0.25, ch*0.2);
-    ctx.fillRect(cw/2-cw*0.3, ch/2, cw*0.25, ch*0.2);
+    // Front wheel
+    ctx.beginPath();
+    ctx.arc(cw * 0.25, wheelY, wheelR, 0, 2 * Math.PI);
+    ctx.fill();
+    // Rear wheel
+    ctx.beginPath();
+    ctx.arc(-cw * 0.25, wheelY, wheelR, 0, 2 * Math.PI);
+    ctx.fill();
+    // Wheel hubcaps
+    ctx.fillStyle = '#999';
+    ctx.beginPath();
+    ctx.arc(cw * 0.25, wheelY, 2, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(-cw * 0.25, wheelY, 2, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Headlight
+    ctx.fillStyle = '#FFE066';
+    ctx.beginPath();
+    ctx.arc(cw/2 - 2, ch * 0.45, 2.5, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Taillight
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(-cw/2 + 2, ch * 0.45, 2, 0, 2 * Math.PI);
+    ctx.fill();
     
     ctx.restore();
   }
@@ -426,6 +485,15 @@ function updateChart() {
     myChart.options.scales.y.display = !gameMode;
   }
   
+  const chartCard = document.getElementById('chart-card');
+  if (chartCard) {
+    if (!gameMode) {
+      chartCard.classList.remove('border', 'shadow-sm');
+    } else {
+      chartCard.classList.add('border', 'shadow-sm');
+    }
+  }
+  
   const datasets = [];
   
   // Line goes first (lowest z-index) — represents the ground in game mode
@@ -482,8 +550,17 @@ function animateLoop(time) {
   if (gameMode && playing && plotData && !plotData.error && curveData.length > 0) {
     const dt = (time - lastTime) || 16;
     lastDt = dt;
-    carT += carSpeed * 0.002 * dt;
-    if (carT > plotMaxX - 0.2) carT = plotMinX + 0.2;
+    carT += carDirection * carSpeed * 0.002 * dt;
+    // Bounce back at edges instead of resetting
+    const edgeL = plotMinX + 0.2;
+    const edgeR = plotMaxX - 0.2;
+    if (carT > edgeR) {
+      carT = edgeR;
+      carDirection = -1;
+    } else if (carT < edgeL) {
+      carT = edgeL;
+      carDirection = 1;
+    }
     if (myChart) myChart.update('none');
   }
   if (nerdOpen && (time - lastNerdTime > 66)) {
@@ -512,10 +589,21 @@ function evalAtCarT() {
   const denom = p2.x - p1.x;
   const factor = denom === 0 ? 0 : (carT - p1.x) / denom;
   const y = p1.y + factor * (p2.y - p1.y);
-  const dy = p2.y - p1.y;
-  const dx = p2.x - p1.x;
-  const slopeRad = Math.atan2(-dy, dx);
-  return { y, slopeDeg: slopeRad * 180 / Math.PI };
+  // Compute angle in pixel-space if chart is available
+  let slopeDeg = 0;
+  if (myChart && myChart.scales) {
+    const xAxis = myChart.scales.x;
+    const yAxis = myChart.scales.y;
+    const px1 = xAxis.getPixelForValue(p1.x);
+    const py1 = yAxis.getPixelForValue(p1.y);
+    const px2 = xAxis.getPixelForValue(p2.x);
+    const py2 = yAxis.getPixelForValue(p2.y);
+    slopeDeg = Math.atan2(py2 - py1, px2 - px1) * 180 / Math.PI;
+  } else {
+    const slopeRad = Math.atan2(-(p2.y - p1.y), p2.x - p1.x);
+    slopeDeg = slopeRad * 180 / Math.PI;
+  }
+  return { y, slopeDeg, direction: carDirection };
 }
 
 function setText(id, text) {
@@ -539,7 +627,7 @@ function updateNerdPanel() {
   const carInfo = evalAtCarT();
   setText('nerd-cart', carT != null ? carT.toFixed(3) : '—');
   setText('nerd-px', carInfo ? carInfo.y.toFixed(3) : '—');
-  setText('nerd-slope', carInfo ? carInfo.slopeDeg.toFixed(2) : '—');
+  setText('nerd-slope', carInfo ? `${carInfo.slopeDeg.toFixed(2)}° (${carInfo.direction > 0 ? 'fwd' : 'rev'})` : '—');
   setText('nerd-curve-info', `${curveData.length} pts`);
   setText('nerd-xrange', `[${plotMinX.toFixed(2)}, ${plotMaxX.toFixed(2)}]`);
   if (myChart && myChart.options && myChart.options.scales) {
@@ -547,7 +635,7 @@ function updateNerdPanel() {
     setText('nerd-yscale', `[${ys.min?.toFixed?.(2) ?? '?'}, ${ys.max?.toFixed?.(2) ?? '?'}] (±15% pad)`);
   }
   setText('nerd-dt', lastDt.toFixed(1));
-  const inc = carSpeed * 0.002 * lastDt;
-  setText('nerd-anim', `${carSpeed.toFixed(2)} × 0.002 × ${lastDt.toFixed(1)} = ${inc.toFixed(4)}`);
+  const inc = carDirection * carSpeed * 0.002 * lastDt;
+  setText('nerd-anim', `${carDirection > 0 ? '+' : '-'}${carSpeed.toFixed(2)} × 0.002 × ${lastDt.toFixed(1)} = ${inc.toFixed(4)}`);
   setText('nerd-drag', dragEnabled ? (dragIdx >= 0 ? `dragging pt ${dragIdx + 1}` : 'on') : 'off');
 }
