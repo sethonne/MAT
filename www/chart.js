@@ -486,11 +486,17 @@ function updateChart() {
   }
   
   const chartCard = document.getElementById('chart-card');
+  const mobCtrl = document.getElementById('mobile-controls');
+  const gameInds = document.getElementById('game-indicators');
   if (chartCard) {
     if (!gameMode) {
       chartCard.classList.remove('border', 'shadow-sm');
+      if (mobCtrl) mobCtrl.classList.add('hidden');
+      if (gameInds) gameInds.classList.add('hidden');
     } else {
       chartCard.classList.add('border', 'shadow-sm');
+      if (mobCtrl) mobCtrl.classList.remove('hidden');
+      if (gameInds) gameInds.classList.remove('hidden');
     }
   }
   
@@ -561,7 +567,7 @@ function animateLoop(time) {
     
     // Math.sin(slopeRad) is positive when going downhill to the right.
     lastGravAccel = Math.sin(slopeRad) * gravityConst;
-    lastEngAccel = carDirection * enginePower;
+    lastEngAccel = engineDirection * enginePower;
     
     const steps = dt / 16;
     carVelocity += (lastGravAccel + lastEngAccel) * steps;
@@ -569,16 +575,18 @@ function animateLoop(time) {
     
     carT += carVelocity * steps;
 
+    // Update facing direction based on velocity
+    if (carVelocity > 0.01) carDirection = 1;
+    else if (carVelocity < -0.01) carDirection = -1;
+
     // Bounce back at edges instead of resetting
     const edgeL = plotMinX + 0.2;
     const edgeR = plotMaxX - 0.2;
     if (carT > edgeR) {
       carT = edgeR;
-      carDirection = -1;
       carVelocity = -Math.abs(carVelocity) * 0.5; // lose some energy on bounce
     } else if (carT < edgeL) {
       carT = edgeL;
-      carDirection = 1;
       carVelocity = Math.abs(carVelocity) * 0.5; // lose some energy on bounce
     }
     if (myChart) myChart.update('none');
@@ -591,6 +599,73 @@ function animateLoop(time) {
   requestAnimationFrame(animateLoop);
 }
 requestAnimationFrame(animateLoop);
+
+let engineKeys = { left: false, right: false };
+
+function updateEngineDirection() {
+  if (engineKeys.left && !engineKeys.right) engineDirection = -1;
+  else if (engineKeys.right && !engineKeys.left) engineDirection = 1;
+  else engineDirection = 0;
+  
+  const indLeft = document.getElementById('ind-left');
+  const indRight = document.getElementById('ind-right');
+  if (indLeft) {
+    if (engineKeys.left) {
+      indLeft.classList.add('bg-primary', 'border-primary', 'text-primary-foreground');
+      indLeft.classList.remove('bg-background/80', 'text-muted-foreground', 'border-border');
+    } else {
+      indLeft.classList.remove('bg-primary', 'border-primary', 'text-primary-foreground');
+      indLeft.classList.add('bg-background/80', 'text-muted-foreground', 'border-border');
+    }
+  }
+  if (indRight) {
+    if (engineKeys.right) {
+      indRight.classList.add('bg-primary', 'border-primary', 'text-primary-foreground');
+      indRight.classList.remove('bg-background/80', 'text-muted-foreground', 'border-border');
+    } else {
+      indRight.classList.remove('bg-primary', 'border-primary', 'text-primary-foreground');
+      indRight.classList.add('bg-background/80', 'text-muted-foreground', 'border-border');
+    }
+  }
+}
+
+window.addEventListener('keydown', function(e) {
+  if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') engineKeys.left = true;
+  if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') engineKeys.right = true;
+  updateEngineDirection();
+});
+
+window.addEventListener('keyup', function(e) {
+  if (e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft') engineKeys.left = false;
+  if (e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight') engineKeys.right = false;
+  updateEngineDirection();
+});
+
+function bindMobileControls() {
+  const btnL = document.getElementById('btn-left');
+  const btnR = document.getElementById('btn-right');
+  if (!btnL || !btnR) return;
+  
+  const downL = (e) => { e.preventDefault(); engineKeys.left = true; updateEngineDirection(); };
+  const upL = (e) => { e.preventDefault(); engineKeys.left = false; updateEngineDirection(); };
+  
+  const downR = (e) => { e.preventDefault(); engineKeys.right = true; updateEngineDirection(); };
+  const upR = (e) => { e.preventDefault(); engineKeys.right = false; updateEngineDirection(); };
+
+  btnL.addEventListener('mousedown', downL);
+  btnL.addEventListener('touchstart', downL, {passive: false});
+  btnL.addEventListener('mouseup', upL);
+  btnL.addEventListener('mouseleave', upL);
+  btnL.addEventListener('touchend', upL);
+
+  btnR.addEventListener('mousedown', downR);
+  btnR.addEventListener('touchstart', downR, {passive: false});
+  btnR.addEventListener('mouseup', upR);
+  btnR.addEventListener('mouseleave', upR);
+  btnR.addEventListener('touchend', upR);
+}
+
+bindMobileControls();
 
 function toggleNerdMode(on) {
   nerdOpen = !!on;

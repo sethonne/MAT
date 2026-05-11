@@ -571,8 +571,8 @@
                     </div>
                   </div>
                   <div class="flex-1 min-h-0">
-                    <div id="chart-card" class="rounded-xl border bg-card shadow-sm overflow-hidden relative h-full">
-                        <div class="absolute top-3 right-3 z-10">
+                    <div id="chart-card" class="rounded-xl border bg-card shadow-sm relative h-full">
+                        <div class="absolute top-3 right-3 z-[100]">
                           <button
                             onclick="toggleSettingsDropdown()"
                             class="p-2 bg-background/90 backdrop-blur border shadow-sm rounded-md text-muted-foreground hover:text-foreground transition-colors"
@@ -636,10 +636,34 @@
                             <div id="game-controls" class="hidden"></div>
                           </div>
                         </div>
-                        <canvas
-                          id="animation-canvas"
-                          class="w-full h-full"
-                        ></canvas>
+                        
+                        <!-- Canvas wrapped for rounded corners without clipping dropdowns -->
+                        <div class="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
+                          <canvas
+                            id="animation-canvas"
+                            class="w-full h-full pointer-events-auto"
+                          ></canvas>
+                        </div>
+                        
+                        <!-- Game Indicators -->
+                        <div id="game-indicators" class="absolute top-3 left-3 hidden group z-[60]">
+                          <div class="flex gap-2 relative">
+                            <div id="ind-left" class="w-10 h-10 rounded-md bg-background/80 backdrop-blur border-2 border-border flex items-center justify-center font-bold text-muted-foreground transition-colors">A</div>
+                            <div id="ind-right" class="w-10 h-10 rounded-md bg-background/80 backdrop-blur border-2 border-border flex items-center justify-center font-bold text-muted-foreground transition-colors">D</div>
+                            <div class="absolute left-0 top-[110%] mt-1 whitespace-nowrap text-[11px] font-medium text-primary-foreground bg-primary/90 px-2 py-1 rounded shadow-sm opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none">
+                              Use A/D or Arrows to Drive
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Mobile Game Controls -->
+                        <div id="mobile-controls" class="absolute bottom-8 left-4 right-4 flex justify-between z-20 pointer-events-none md:hidden hidden">
+                          <button id="btn-left" class="pointer-events-auto bg-background/80 backdrop-blur p-3 rounded-full shadow-lg border active:bg-muted text-foreground transition-colors touch-manipulation">
+                            <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                          </button>
+                          <button id="btn-right" class="pointer-events-auto bg-background/80 backdrop-blur p-3 rounded-full shadow-lg border active:bg-muted text-foreground transition-colors touch-manipulation">
+                            <i data-lucide="arrow-right" class="w-6 h-6"></i>
+                          </button>
+                        </div>
                         <div
                           id="drag-coord-tooltip"
                           class="hidden absolute pointer-events-none bg-black/80 text-white text-xs font-mono px-2 py-1 rounded z-50"
