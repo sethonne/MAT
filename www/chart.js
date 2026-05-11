@@ -86,19 +86,15 @@ const carPlugin = {
     
     const px = xAxis.getPixelForValue(t);
     const py = yAxis.getPixelForValue(cy);
-    
-    const pixelPerX = xAxis.getPixelForValue(1) - xAxis.getPixelForValue(0);
-    const pixelPerY = yAxis.getPixelForValue(0) - yAxis.getPixelForValue(1); 
-    
+
     ctx.save();
     ctx.translate(px, py);
     ctx.rotate(angle);
-    
-    const lift = 0.32 * pixelPerY;
+
+    const cw = 64;
+    const ch = 20;
+    const lift = ch * 0.64;
     ctx.translate(0, -lift);
-    
-    const cw = 1.6 * pixelPerX;
-    const ch = 0.5 * pixelPerY;
     
     ctx.fillStyle = '#FF7F2A';
     ctx.fillRect(-cw/2, -ch/2, cw, ch);
