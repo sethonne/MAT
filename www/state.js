@@ -11,6 +11,9 @@ var playing = true;
 var gameMode = false;
 var carSpeed = 1;
 var carDirection = 1;
+var carVelocity = 0; // Added for physics (momentum/gravity)
+var lastGravAccel = 0;
+var lastEngAccel = 0;
 var showPts = true;
 
 

@@ -184,9 +184,9 @@
         </div>
       </header>
 
-      <main class="flex-1 container mx-auto px-4 md:px-8 py-8">
+      <main class="flex-1 container mx-auto px-4 md:px-8 py-4 flex flex-col h-[calc(100vh-3.5rem)]">
         <div
-          class="mb-8 flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between"
+          class="mb-4 flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between shrink-0"
         >
           <div>
             <h1 class="text-3xl font-bold tracking-tight">
@@ -200,7 +200,7 @@
         </div>
 
         <!-- Tabs Navigation -->
-        <div class="w-full flex justify-center md:justify-start mb-6">
+        <div class="w-full flex justify-center md:justify-start mb-4 shrink-0">
           <div
             class="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground"
           >
@@ -222,8 +222,9 @@
           </div>
         </div>
 
+        <div class="flex-1 min-h-0 relative">
         <!-- INTRODUCTION TAB -->
-        <div id="intro" class="tab-content active space-y-6">
+        <div id="intro" class="tab-content active space-y-6 absolute inset-0 overflow-y-auto pb-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Definition Card -->
             <div
@@ -393,10 +394,10 @@
         </div>
 
         <!-- CALCULATE TAB -->
-        <div id="calculate" class="tab-content">
-          <div class="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-6">
+        <div id="calculate" class="tab-content hidden absolute inset-0">
+          <div class="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-6 h-full min-h-0">
             <!-- Left Panel -->
-            <div class="flex flex-col gap-6">
+            <div class="flex flex-col gap-6 overflow-y-auto pr-2 pb-4">
               <div
                 class="rounded-xl border bg-card text-card-foreground shadow-sm"
               >
@@ -503,9 +504,9 @@
 
             <!-- Right Panel -->
             <div
-              class="rounded-xl border bg-card text-card-foreground shadow-sm flex flex-col"
+              class="rounded-xl border bg-card text-card-foreground shadow-sm flex flex-col min-h-0 overflow-hidden h-full"
             >
-              <div class="flex flex-col space-y-1.5 p-4 border-b">
+              <div class="flex flex-col space-y-1.5 p-4 border-b shrink-0">
                 <div
                   class="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-max"
                 >
@@ -535,7 +536,7 @@
               </div>
               <div
                 id="sub-tabs-root"
-                class="p-6 flex-1 flex flex-col min-h-[400px]"
+                class="p-4 flex-1 flex flex-col min-h-0"
               >
                 <!-- Plot Tab -->
                 <div
@@ -543,7 +544,7 @@
                   class="sub-tab-content active flex flex-col flex-1 min-h-0 relative"
                 >
                   <div
-                    class="mb-4 bg-card border rounded-lg p-4 shadow-sm relative"
+                    class="mb-4 bg-card border rounded-lg p-4 shadow-sm relative shrink-0"
                   >
                     <div class="flex items-center justify-between mb-3">
                       <p class="text-sm font-medium text-muted-foreground">
@@ -569,7 +570,7 @@
                       ></span>
                     </div>
                   </div>
-                  <div class="flex-1 min-h-[400px]">
+                  <div class="flex-1 min-h-0">
                     <div id="chart-card" class="rounded-xl border bg-card shadow-sm overflow-hidden relative h-full">
                         <div class="absolute top-3 right-3 z-10">
                           <button
@@ -661,7 +662,9 @@
                           <div><span class="text-muted-foreground">x range:</span> <span id="nerd-xrange">—</span></div>
                           <div><span class="text-muted-foreground">y scale:</span> <span id="nerd-yscale">—</span></div>
                           <div><span class="text-muted-foreground">Δt (ms):</span> <span id="nerd-dt">—</span></div>
-                          <div><span class="text-muted-foreground">carT += speed × 0.002 × dt:</span> <span id="nerd-anim" class="text-primary">—</span></div>
+                          <div><span class="text-muted-foreground">velocity:</span> <span id="nerd-vel" class="text-primary">—</span></div>
+                          <div><span class="text-muted-foreground">gravity (sin θ):</span> <span id="nerd-grav" class="text-primary">—</span></div>
+                          <div><span class="text-muted-foreground">engine force:</span> <span id="nerd-eng" class="text-primary">—</span></div>
                           <div class="text-[10px] text-muted-foreground italic pt-1">drag: <span id="nerd-drag">off</span></div>
                         </aside>
                     </div>
@@ -684,6 +687,7 @@
               </div>
             </div>
           </div>
+        </div>
         </div>
       </main>
     </div>

@@ -550,16 +550,36 @@ function animateLoop(time) {
   if (gameMode && playing && plotData && !plotData.error && curveData.length > 0) {
     const dt = (time - lastTime) || 16;
     lastDt = dt;
-    carT += carDirection * carSpeed * 0.002 * dt;
+    
+    const evalData = evalAtCarT();
+    const slopeRad = evalData ? evalData.slopeDeg * Math.PI / 180 : 0;
+    
+    // Physics constants
+    const enginePower = 0.001 * carSpeed;
+    const gravityConst = 0.0008 * carSpeed;
+    const friction = 0.995; // Retain 99.5% velocity per 16ms (great for coasting)
+    
+    // Math.sin(slopeRad) is positive when going downhill to the right.
+    lastGravAccel = Math.sin(slopeRad) * gravityConst;
+    lastEngAccel = carDirection * enginePower;
+    
+    const steps = dt / 16;
+    carVelocity += (lastGravAccel + lastEngAccel) * steps;
+    carVelocity *= Math.pow(friction, steps);
+    
+    carT += carVelocity * steps;
+
     // Bounce back at edges instead of resetting
     const edgeL = plotMinX + 0.2;
     const edgeR = plotMaxX - 0.2;
     if (carT > edgeR) {
       carT = edgeR;
       carDirection = -1;
+      carVelocity = -Math.abs(carVelocity) * 0.5; // lose some energy on bounce
     } else if (carT < edgeL) {
       carT = edgeL;
       carDirection = 1;
+      carVelocity = Math.abs(carVelocity) * 0.5; // lose some energy on bounce
     }
     if (myChart) myChart.update('none');
   }
@@ -620,7 +640,9 @@ function updateNerdPanel() {
     setText('nerd-xrange', '—');
     setText('nerd-yscale', '—');
     setText('nerd-dt', '—');
-    setText('nerd-anim', '—');
+    setText('nerd-vel', '—');
+    setText('nerd-grav', '—');
+    setText('nerd-eng', '—');
     setText('nerd-drag', dragEnabled ? 'on' : 'off');
     return;
   }
@@ -635,7 +657,8 @@ function updateNerdPanel() {
     setText('nerd-yscale', `[${ys.min?.toFixed?.(2) ?? '?'}, ${ys.max?.toFixed?.(2) ?? '?'}] (±15% pad)`);
   }
   setText('nerd-dt', lastDt.toFixed(1));
-  const inc = carDirection * carSpeed * 0.002 * lastDt;
-  setText('nerd-anim', `${carDirection > 0 ? '+' : '-'}${carSpeed.toFixed(2)} × 0.002 × ${lastDt.toFixed(1)} = ${inc.toFixed(4)}`);
+  setText('nerd-vel', carVelocity.toFixed(5));
+  setText('nerd-grav', lastGravAccel.toFixed(5));
+  setText('nerd-eng', lastEngAccel.toFixed(5));
   setText('nerd-drag', dragEnabled ? (dragIdx >= 0 ? `dragging pt ${dragIdx + 1}` : 'on') : 'off');
 }
