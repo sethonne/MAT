@@ -136,18 +136,49 @@ function initChart() {
           position: 'bottom',
           min: plotMinX,
           max: plotMaxX,
-          grid: { color: 'rgba(0,0,0,0.05)' }
+          grid: { color: 'hsl(214.3 31.8% 91.4%)' },
+          ticks: { color: 'hsl(215.4 16.3% 46.9%)', font: { size: 11 } },
+          border: { color: 'hsl(214.3 31.8% 91.4%)' }
         },
         y: { 
           type: 'linear',
           min: -5,
           max: 15,
-          grid: { color: 'rgba(0,0,0,0.05)' }
+          grid: { color: 'hsl(214.3 31.8% 91.4%)' },
+          ticks: { color: 'hsl(215.4 16.3% 46.9%)', font: { size: 11 } },
+          border: { color: 'hsl(214.3 31.8% 91.4%)' }
         }
       },
       plugins: {
         legend: { display: false },
-        title: { display: false }
+        title: { display: false },
+        tooltip: {
+          enabled: true,
+          callbacks: {
+            label: function(context) {
+              const ds = context.dataset;
+              // Only label control points (the scatter dataset with order -1)
+              if (ds.order === -1) {
+                return 'Point ' + (context.dataIndex + 1) + ': (' + context.parsed.x.toFixed(3) + ', ' + context.parsed.y.toFixed(3) + ')';
+              }
+              if (ds.order === -2) {
+                return 'Interp ' + (context.dataIndex + 1) + ': (' + context.parsed.x.toFixed(3) + ', ' + context.parsed.y.toFixed(3) + ')';
+              }
+              return '';
+            },
+            title: function() { return ''; }
+          },
+          filter: function(tooltipItem) {
+            // Only show tooltips for scatter point datasets, not the line
+            return tooltipItem.dataset.order != null;
+          },
+          backgroundColor: 'hsl(222.2 84% 4.9%)',
+          titleFont: { size: 0 },
+          bodyFont: { family: 'Inter', size: 12 },
+          padding: { x: 10, y: 6 },
+          cornerRadius: 6,
+          displayColors: false
+        }
       },
       layout: {
         padding: 0
@@ -156,21 +187,16 @@ function initChart() {
     plugins: [carPlugin, {
       id: 'customBg',
       beforeDraw: (chart) => {
+        if (!gameMode) return;
         const ctx = chart.ctx;
         ctx.save();
-        ctx.fillStyle = '#87CEEB'; 
+        ctx.fillStyle = '#87CEEB';
         ctx.fillRect(0, 0, chart.width, chart.height);
-        
-        if (plotData && !plotData.error) {
-           const xAxis = chart.scales.x;
-           const yAxis = chart.scales.y;
-           
-           // Draw sun at a fixed pixel coordinate in the top left
-           ctx.fillStyle = '#FFE066';
-           ctx.beginPath();
-           ctx.arc(60, 60, 25, 0, 2*Math.PI);
-           ctx.fill();
-        }
+        // Draw sun
+        ctx.fillStyle = '#FFE066';
+        ctx.beginPath();
+        ctx.arc(60, 60, 25, 0, 2 * Math.PI);
+        ctx.fill();
         ctx.restore();
       }
     }, {
@@ -180,11 +206,12 @@ function initChart() {
         ctx.save();
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = 'bold 12px Inter, sans-serif';
+        ctx.font = 'bold 11px Inter, sans-serif';
         ctx.fillStyle = 'white';
 
-        chart.data.datasets.forEach((meta, datasetIndex) => {
-          if (meta.pointRadius === 8) {
+        chart.data.datasets.forEach((ds, datasetIndex) => {
+          // Match control-point scatter datasets (pointRadius 7, order -1)
+          if (ds.order === -1 && ds.pointRadius === 8) {
             const metaData = chart.getDatasetMeta(datasetIndex);
             metaData.data.forEach((element, index) => {
               const {x, y} = element.tooltipPosition();
@@ -393,32 +420,39 @@ function updateChart() {
       myChart.options.scales.y.min = minY - (yRange * 0.15);
       myChart.options.scales.y.max = maxY + (yRange * 0.15);
     }
+    
+    // Hide axes entirely in game mode so there is no padding/margin
+    myChart.options.scales.x.display = !gameMode;
+    myChart.options.scales.y.display = !gameMode;
   }
   
   const datasets = [];
   
+  // Line goes first (lowest z-index) — represents the ground in game mode
   if (curveData.length > 0) {
     datasets.push({
       type: 'line',
       data: curveData,
-      borderColor: '#2F2F2F',
-      borderWidth: 3,
+      borderColor: gameMode ? 'hsl(142 71% 29%)' : 'hsl(221.2 83.2% 53.3%)',
+      borderWidth: 2.5,
       pointRadius: 0,
       tension: 0.1,
       fill: { value: -1000 }, 
-      backgroundColor: '#3b82f640'
+      backgroundColor: gameMode ? 'hsl(142 71% 45%)' : 'hsla(221.2, 83.2%, 53.3%, 0.08)'
     });
   }
   
-  if (controlPts.length > 0) {
+  // Points go after the line (higher z-index, rendered on top)
+  if (showPts && controlPts.length > 0) {
     datasets.push({
       type: 'scatter',
       data: controlPts,
-      backgroundColor: '#FF6B6B',
-      borderColor: 'white',
-      borderWidth: 2,
+      backgroundColor: 'hsl(0 84.2% 60.2%)',
+      borderColor: 'hsl(0 84.2% 50%)',
+      borderWidth: 1,
       pointRadius: 8,
-      pointHoverRadius: 10
+      pointHoverRadius: 10,
+      order: -1
     });
   }
   
@@ -426,11 +460,13 @@ function updateChart() {
     datasets.push({
       type: 'scatter',
       data: interpPts,
-      backgroundColor: 'yellow',
-      borderColor: 'orange',
-      borderWidth: 1,
+      backgroundColor: 'hsl(45 93% 58%)',
+      borderColor: 'hsl(25 95% 53%)',
+      borderWidth: 1.5,
       pointRadius: 7,
-      pointStyle: 'rectRot'
+      pointHoverRadius: 10,
+      pointStyle: 'rectRot',
+      order: -2
     });
   }
   

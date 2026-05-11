@@ -7,6 +7,25 @@ function clamp(val) {
   return Math.min(Math.max(val, MIN_VAL), MAX_VAL);
 }
 
+function truncateDisplay(val) {
+  if (val == null || isNaN(val)) return val;
+  const n = Number(val);
+  // If the value is already a clean integer or short decimal, keep it as-is
+  if (Number.isInteger(n)) return String(n);
+  const s = String(n);
+  // Only truncate if the string representation is longer than 3 decimals
+  const dotIdx = s.indexOf('.');
+  if (dotIdx >= 0 && s.length - dotIdx - 1 > 3) {
+    return n.toFixed(3);
+  }
+  return s;
+}
+
+function truncateInput(inputEl, fullVal) {
+  // On blur, display the truncated version
+  inputEl.value = truncateDisplay(fullVal);
+}
+
 function findDuplicateXIndices(points) {
   const counts = new Map();
   points.forEach((p, i) => {
@@ -53,13 +72,15 @@ function renderDataPoints() {
     const isDup = dupIdx.has(i);
     const rowClass = isDup ? 'dup-row' : '';
     const dupBadge = isDup ? `<div class="text-[9px] text-red-600 font-semibold leading-none pb-1 px-1">duplicate x</div>` : '';
+    const xDisplay = truncateDisplay(p.x);
+    const yDisplay = truncateDisplay(p.y);
     html += `<tr class="${rowClass}">
               <td class="px-3 py-2 border-r text-center text-muted-foreground font-mono bg-muted/20">${i + 1}</td>
               <td class="p-0 border-r">
-                <input id="data-x-${i}" type="number" class="input-cell" value="${p.x}" onchange="updateDataPoint(${i}, 'x', this.value, this)">
+                <input id="data-x-${i}" type="number" class="input-cell" value="${xDisplay}" onfocus="this.value = dataPoints[${i}].x" onblur="truncateInput(this, dataPoints[${i}].x)" onchange="updateDataPoint(${i}, 'x', this.value, this)">
                 ${dupBadge}
               </td>
-              <td class="p-0 border-r"><input id="data-y-${i}" type="number" class="input-cell" value="${p.y}" onchange="updateDataPoint(${i}, 'y', this.value, this)"></td>
+              <td class="p-0 border-r"><input id="data-y-${i}" type="number" class="input-cell" value="${yDisplay}" onfocus="this.value = dataPoints[${i}].y" onblur="truncateInput(this, dataPoints[${i}].y)" onchange="updateDataPoint(${i}, 'y', this.value, this)"></td>
               <td class="p-2 text-center">
                 <button class="text-muted-foreground hover:text-destructive w-full h-full flex justify-center items-center" onclick="removeDataPoint(${i})">
                   <i data-lucide="x" class="w-4 h-4"></i>
@@ -122,7 +143,7 @@ function fmtError(v) {
   const a = Math.abs(v);
   if (a === 0) return '0';
   if (a < 0.001 || a > 9999) return v.toExponential(3);
-  return v.toFixed(4);
+  return v.toFixed(3);
 }
 
 function renderInterpPoints() {
@@ -144,13 +165,14 @@ function renderInterpPoints() {
     let yVal = "...";
     const interpYArr = plotData && !plotData.error && plotData.interp_y ? ensureArray(plotData.interp_y) : [];
     if (interpYArr[i] !== undefined) {
-      yVal = interpYArr[i].toFixed(4);
+      yVal = interpYArr[i].toFixed(3);
     }
     const errVal = fmtError(errArr[i]);
+    const xDisplay = truncateDisplay(x);
 
     html += `<tr>
               <td class="px-3 py-2 border-r text-center text-muted-foreground font-mono bg-muted/20">${i + 1}</td>
-              <td class="p-0 border-r bg-background"><input id="interp-x-${i}" type="number" class="input-cell font-mono text-sm" value="${x}" onchange="updateInterpPoint(${i}, this.value, this)"></td>
+              <td class="p-0 border-r bg-background"><input id="interp-x-${i}" type="number" class="input-cell font-mono text-sm" value="${xDisplay}" onfocus="this.value = interpX[${i}]" onblur="truncateInput(this, interpX[${i}])" onchange="updateInterpPoint(${i}, this.value, this)"></td>
               <td class="p-0 border-r bg-muted/20"><input type="text" readonly class="input-cell font-bold font-mono text-sm text-primary cursor-not-allowed" value="${yVal}"></td>
               <td class="p-0 border-r bg-muted/20"><input type="text" readonly class="input-cell font-mono text-xs text-amber-700 cursor-not-allowed" value="${errVal}"></td>
               <td class="p-2 text-center">

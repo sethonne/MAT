@@ -4,7 +4,7 @@ console.log('[Steps] steps.js script loaded and executing');
 const STEPS_COLLAPSE_THRESHOLD = 5; // collapse middle orders if > this many
 
 function roundVal(v) {
-  return Number(Number(v).toFixed(4));
+  return Number(Number(v).toFixed(3));
 }
 
 function fmtNum(v) {
