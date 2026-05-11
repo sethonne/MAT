@@ -39,6 +39,19 @@ newton_eval <- function(dd_result, x_eval) {
   result
 }
 
+# Approximate Newton interpolation error: |coeffs[n]| * |prod_{i=1..n}(x - x_i)|.
+# Uses the top-order divided difference as a proxy for f[x_0,...,x_n,x] since the
+# true next-order DD isn't available without an extra data point or analytic f.
+newton_error_bound <- function(dd_result, x_eval) {
+  coeffs <- dd_result$coeffs
+  x <- dd_result$x
+  n <- length(coeffs)
+  if (n < 2) return(rep(NA_real_, length(x_eval)))
+  prod_term <- rep(1, length(x_eval))
+  for (i in seq_len(n)) prod_term <- prod_term * (x_eval - x[i])
+  abs(coeffs[n]) * abs(prod_term)
+}
+
 newton_latex <- function(dd_result) {
   coeffs <- dd_result$coeffs
   x <- dd_result$x

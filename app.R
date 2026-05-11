@@ -42,6 +42,11 @@ server <- function(input, output, session) {
       # Ensure numeric
       df$x <- as.numeric(df$x)
       df$y <- as.numeric(df$y)
+      # Server-side safety cap (mirrors MAX_POINTS in tables.js)
+      if (nrow(df) > 20) df <- df[1:20, ]
+      # Clamp to sane range (mirrors MIN_VAL/MAX_VAL in tables.js)
+      df$x <- pmax(pmin(df$x, 10000), -10000)
+      df$y <- pmax(pmin(df$y, 10000), -10000)
       rv$data_points <- df
 
       if (is.null(input$auto_calc) || isTRUE(input$auto_calc)) {
@@ -81,6 +86,8 @@ server <- function(input, output, session) {
 
   observeEvent(input$client_interp_x, {
     x_vals <- as.numeric(input$client_interp_x)
+    if (length(x_vals) > 10) x_vals <- x_vals[1:10]
+    x_vals <- pmax(pmin(x_vals, 10000), -10000)
     if (length(x_vals) > 0) {
       rv$interp_points <- data.frame(x = x_vals)
       if (is.null(input$auto_calc) || isTRUE(input$auto_calc)) {
@@ -108,8 +115,10 @@ server <- function(input, output, session) {
     ys <- newton_eval(res, xs)
 
     ip_y <- numeric(0)
+    ip_err <- numeric(0)
     if (length(ip_x) > 0) {
       ip_y <- newton_eval(res, ip_x)
+      ip_err <- newton_error_bound(res, ip_x)
     }
 
     # Convert DD table matrix to list-of-lists for JSON
@@ -125,6 +134,7 @@ server <- function(input, output, session) {
       pts_y = pts$y,
       interp_x = ip_x,
       interp_y = ip_y,
+      interp_err = ip_err,
       min_x = min_x,
       max_x = max_x
     ))

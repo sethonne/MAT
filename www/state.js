@@ -12,4 +12,14 @@ var gameMode = false;
 var carSpeed = 1;
 var showPts = true;
 
+var dragEnabled = false;
+var dragIdx = -1;
+var dragOriginalX = null;
+var dragOriginalY = null;
+var dragHoverIdx = -1;
+var dragFlashIdx = -1;
+var dragFlashUntil = 0;
+
+var nerdOpen = false;
+
 const ensureArray = (v) => Array.isArray(v) ? v : (v != null ? [v] : []);

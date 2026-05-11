@@ -100,6 +100,21 @@
           text-align: center !important;
         }
       }
+      @keyframes flashred {
+        0% { background-color: #fee2e2; }
+        100% { background-color: transparent; }
+      }
+      .flash-clamp { animation: flashred 0.6s ease-out; }
+      .add-btn-disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+      }
+      .dup-row {
+        background-color: #fef2f2 !important;
+      }
+      .drag-ready { cursor: grab; }
+      .drag-active { cursor: grabbing !important; }
     </style>
 
     <script>
@@ -416,6 +431,7 @@
                     </div>
                     <div id="data-points-container"></div>
                     <button
+                      id="btn-add-data"
                       onclick="addDataPoint()"
                       class="w-full mt-2 flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
                     >
@@ -474,6 +490,7 @@
                   </h3>
                   <div id="interp-points-container"></div>
                   <button
+                    id="btn-add-interp"
                     onclick="addInterpPoint()"
                     class="w-full mt-2 flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
                   >
@@ -595,17 +612,24 @@
                               <span class="text-sm">Speed</span>
                               <span id="speed-val" class="text-xs font-mono text-muted-foreground">1.0x</span>
                             </div>
-                            <input 
-                              type="range" 
-                              id="range-speed" 
-                              min="0.1" 
-                              max="3" 
-                              step="0.1" 
-                              value="1" 
+                            <input
+                              type="range"
+                              id="range-speed"
+                              min="0.1"
+                              max="3"
+                              step="0.1"
+                              value="1"
                               class="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
                               oninput="document.getElementById('speed-val').innerText = parseFloat(this.value).toFixed(1) + 'x'; updateSpeed(this.value);"
                             >
                           </div>
+
+                          <div class="h-px bg-border my-1.5"></div>
+
+                          <label class="flex items-center gap-2.5 px-2 py-2 hover:bg-muted rounded-md cursor-pointer text-sm transition-colors">
+                            <input type="checkbox" id="chk-nerd-mode" class="rounded border-input text-primary focus:ring-primary w-4 h-4" onchange="toggleNerdMode(this.checked)">
+                            <span class="flex items-center gap-1.5"><i data-lucide="braces" class="w-3.5 h-3.5"></i> Show All Formulas</span>
+                          </label>
                         </div>
                         <div id="game-controls" class="hidden"></div>
                       </div>
@@ -614,6 +638,31 @@
                       id="animation-canvas"
                       class="w-full h-full"
                     ></canvas>
+                    <div
+                      id="drag-coord-tooltip"
+                      class="hidden absolute pointer-events-none bg-black/80 text-white text-xs font-mono px-2 py-1 rounded z-50"
+                      style="left: 0; top: 0;"
+                    ></div>
+                    <aside
+                      id="nerd-panel"
+                      class="hidden absolute left-4 bottom-4 w-72 bg-card/95 backdrop-blur border rounded-lg shadow-lg p-3 z-40 text-xs font-mono space-y-1.5"
+                    >
+                      <div class="flex items-center justify-between mb-1 pb-1.5 border-b">
+                        <span class="font-semibold text-foreground text-[11px] uppercase tracking-wider">Live Formulas</span>
+                        <button onclick="toggleNerdMode(false); document.getElementById('chk-nerd-mode').checked = false;" class="text-muted-foreground hover:text-foreground">
+                          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                      </div>
+                      <div><span class="text-muted-foreground">car x:</span> <span id="nerd-cart" class="text-primary">—</span></div>
+                      <div><span class="text-muted-foreground">P(x):</span> <span id="nerd-px" class="text-primary">—</span></div>
+                      <div><span class="text-muted-foreground">slope (atan2):</span> <span id="nerd-slope" class="text-primary">—</span>°</div>
+                      <div><span class="text-muted-foreground">curve samples:</span> <span id="nerd-curve-info">—</span></div>
+                      <div><span class="text-muted-foreground">x range:</span> <span id="nerd-xrange">—</span></div>
+                      <div><span class="text-muted-foreground">y scale:</span> <span id="nerd-yscale">—</span></div>
+                      <div><span class="text-muted-foreground">Δt (ms):</span> <span id="nerd-dt">—</span></div>
+                      <div><span class="text-muted-foreground">carT += speed × 0.002 × dt:</span> <span id="nerd-anim" class="text-primary">—</span></div>
+                      <div class="text-[10px] text-muted-foreground italic pt-1">drag: <span id="nerd-drag">off</span></div>
+                    </aside>
                   </div>
                 </div>
                 <!-- Steps Tab -->

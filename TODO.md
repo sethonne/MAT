@@ -5,17 +5,17 @@
 
 ---
 
-## 1. 📌 Plot Draggable Points
+## 1. [x] 📌 Plot Draggable Points — **COMPLETED**
 
 **Priority:** High
 
 Make each data point on the Chart.js plot **interactable / draggable**. Dragging a point should update the data table, trigger recalculation, and re-render the polynomial curve in real time.
 
-- [ ] Implement `mousedown` / `mousemove` / `mouseup` (+ touch equivalents) hit-testing against chart point elements.
-- [ ] On drag, update `dataPoints[i]` in `state.js` and call `Shiny.setInputValue('client_data_points', ...)` to sync.
-- [ ] Snap-to-grid option (optional).
-- [ ] **Settings toggle:** Add a checkbox in the settings dropdown to **enable/disable** draggable points (`#chk-drag-pts` already exists in `template.html` — wire it up to actually guard the drag logic).
-- [ ] Visual feedback: cursor change on hover, highlight ring on active drag, coordinate tooltip near cursor while dragging.
+- [x] Implement `mousedown` / `mousemove` / `mouseup` (+ touch equivalents) hit-testing against chart point elements.
+- [x] On drag, update `dataPoints[i]` in `state.js` and call `Shiny.setInputValue('client_data_points', ...)` to sync.
+- [ ] Snap-to-grid option (optional — deferred).
+- [x] **Settings toggle:** `#chk-drag-pts` wired up in `chart.js`.
+- [x] Visual feedback: cursor change on hover, highlight ring on active drag, coordinate tooltip near cursor while dragging.
 
 ---
 
@@ -54,18 +54,14 @@ Replace the current minimal steps output with a **complete, verbose, non-redunda
 
 ---
 
-## 3. 📊 Interpolation Error Bound
+## 3. [x] 📊 Interpolation Error Bound — **COMPLETED**
 
 **Priority:** Medium
 
 Add an **error estimation** for interpolated points, analogous to the Lagrange remainder / Newton form error bound.
 
-- [ ] Display the error formula:  
-       `E(x) = f[x₀, x₁, ..., xₙ, x] · ∏(x - xᵢ)`
-- [ ] For each interpolation point, show the estimated error magnitude (requires the next-order divided difference or a known `f^(n+1)` bound).
-- [ ] If the true function is unknown (just data points), note that the error bound is an approximation based on the next DD term.
-- [ ] Show error value in the interpolation results table (new column).
-- [ ] R computes the error; JS renders it.
+- [x] Approximated as `|coeffs[n]| · |∏(x - xᵢ)|` — uses the top-order DD coefficient as a proxy for the unavailable next-order term. Header column carries an explanatory tooltip.
+- [x] R computes via `newton_error_bound()` in `global.R`; JS renders in the Live Interpolation table.
 
 ---
 
@@ -84,7 +80,7 @@ Enhance the existing DD table tab with a **step-by-step summary view** that brea
 
 ---
 
-## 5. 🤓 "Show All Formulas" (Nerd Mode) Button
+## 5. [x] 🤓 "Show All Formulas" (Nerd Mode) Button — **COMPLETED**
 
 **Priority:** Low
 
@@ -106,17 +102,17 @@ A toggle button (e.g., in the header or settings) that reveals **all current cal
 
 ---
 
-## 6. 🚧 Input Limits & Validation
+## 6. [x] 🚧 Input Limits & Validation — **COMPLETED**
 
 **Priority:** High
 
 Add hard caps on data point count and value ranges to prevent performance degradation and numerical instability.
 
-- [ ] **Max data points:** Cap at a reasonable limit (e.g., **20 points**). Disable "Add Data Point" button when limit is reached. Show a tooltip explaining why.
-- [ ] **Value range:** Restrict X and Y inputs to a sane range (e.g., `-10000 ≤ x, y ≤ 10000`). Clamp or reject out-of-range values with inline validation feedback.
-- [x] **Duplicate X detection:** Already partially handled (`length(unique(x_vals)) != length(x_vals)` in R). Surface this as a clear inline error in the data table (highlight the offending row red).
-- [ ] **Interpolation point limits:** Similar cap (e.g., **10 interpolation points**).
-- [ ] Enforce limits in **both JS (client-side UX)** and **R (server-side safety)**.
+- [x] **Max data points:** Capped at 20. "Add Data Point" button disables with tooltip.
+- [x] **Value range:** Clamped to `[-10000, 10000]` with a red flash + tooltip on out-of-range input.
+- [x] **Duplicate X detection:** Offending rows now highlight red with a "duplicate x" badge.
+- [x] **Interpolation point limits:** Capped at 10; Add button disables identically.
+- [x] **Server-side fallback:** `app.R` also caps rows and clamps values defensively.
 
 ---
 
