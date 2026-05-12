@@ -10,6 +10,11 @@ function resetAnimation() {
   if (plotData && plotData.xs && plotData.xs.length > 0) {
     carT = plotMinX + 0.2;
     carDirection = 1;
+    // Clear point highlights on reset
+    lastActiveRowIdx = -1;
+    passedPoints = new Array(controlPts.length).fill(false);
+    document.querySelectorAll('.active-row-tint').forEach(el => el.classList.remove('active-row-tint'));
+    updateChart();
   }
 }
 
@@ -54,6 +59,8 @@ Shiny.addCustomMessageHandler('update_plot_data', function(msg) {
   if (carT === null || carT < plotMinX || carT > plotMaxX) {
     carT = plotMinX + 0.2;
   }
+  // Reset passed points when new data arrives
+  passedPoints = new Array(controlPts.length).fill(false);
 
   updateChart();
   renderInterpPoints();
@@ -576,6 +583,9 @@ function updateChart() {
       chartCard.classList.remove('border', 'shadow-sm');
       if (mobCtrl) mobCtrl.classList.add('hidden');
       if (gameInds) gameInds.classList.add('hidden');
+      // Clear highlights when exiting game mode
+      document.querySelectorAll('.active-row-tint').forEach(el => el.classList.remove('active-row-tint'));
+      lastActiveRowIdx = -1;
     } else {
       chartCard.classList.add('border', 'shadow-sm');
       if (mobCtrl) mobCtrl.classList.remove('hidden');
@@ -630,8 +640,8 @@ function updateChart() {
     datasets.push({
       type: 'scatter',
       data: controlPts,
-      backgroundColor: 'hsl(0 84.2% 60.2%)',
-      borderColor: 'hsl(0 84.2% 50%)',
+      backgroundColor: controlPts.map((_, i) => (gameMode && passedPoints[i]) ? 'hsl(221.2 83.2% 53.3%)' : 'hsl(0 84.2% 60.2%)'),
+      borderColor: controlPts.map((_, i) => (gameMode && passedPoints[i]) ? 'hsl(221.2 83.2% 43.3%)' : 'hsl(0 84.2% 50%)'),
       borderWidth: 1,
       pointRadius: 8,
       pointHoverRadius: 10,
@@ -661,6 +671,57 @@ function updateChart() {
 let lastTime = 0;
 let lastNerdTime = 0;
 let lastDt = 16;
+let lastActiveRowIdx = -1;
+let passedPoints = [];
+
+function updateTableHighlight(newX, oldX) {
+  if (!gameMode || !controlPts.length || oldX === null) {
+    if (lastActiveRowIdx !== -1) {
+      document.querySelectorAll('.active-row-tint').forEach(el => el.classList.remove('active-row-tint'));
+      lastActiveRowIdx = -1;
+      passedPoints = new Array(controlPts.length).fill(false);
+    }
+    return;
+  }
+
+  let stateChanged = false;
+  for (let i = 0; i < controlPts.length; i++) {
+    const px = controlPts[i].x;
+    // Moving Right: Highlight
+    if (oldX <= px && newX > px) {
+      if (!passedPoints[i]) {
+        passedPoints[i] = true;
+        stateChanged = true;
+      }
+      lastActiveRowIdx = i;
+    } 
+    // Moving Left: Unhighlight
+    else if (oldX >= px && newX < px) {
+      if (passedPoints[i]) {
+        passedPoints[i] = false;
+        stateChanged = true;
+      }
+      lastActiveRowIdx = i;
+    }
+  }
+
+  if (stateChanged) {
+    updateChart(); // Redraw chart to update point colors
+  }
+
+  // Update table row tints based on passed state
+  for (let i = 0; i < controlPts.length; i++) {
+    const row = document.getElementById(`data-row-${i}`);
+    if (row) {
+      if (passedPoints[i]) {
+        row.classList.add('active-row-tint');
+      } else {
+        row.classList.remove('active-row-tint');
+      }
+    }
+  }
+}
+
 function animateLoop(time) {
   if (gameMode && playing && plotData && !plotData.error && curveData.length > 0) {
     const dt = (time - lastTime) || 16;
@@ -683,7 +744,9 @@ function animateLoop(time) {
     carVelocity += (lastGravAccel + lastEngAccel) * steps;
     carVelocity *= Math.pow(friction, steps);
     
+    const oldT = carT;
     carT += carVelocity * steps;
+    updateTableHighlight(carT, oldT);
 
     // Update facing direction based on velocity
     if (carVelocity > 0.01) carDirection = 1;

@@ -74,7 +74,7 @@ function renderDataPoints() {
     const dupBadge = isDup ? `<div class="text-[9px] text-red-600 font-semibold leading-none pb-1 px-1">duplicate x</div>` : '';
     const xDisplay = truncateDisplay(p.x);
     const yDisplay = truncateDisplay(p.y);
-    html += `<tr class="${rowClass}">
+    html += `<tr id="data-row-${i}" class="${rowClass} transition-colors duration-300">
               <td class="px-3 py-2 border-r text-center text-muted-foreground font-mono bg-muted/20">${i + 1}</td>
               <td class="p-0 border-r">
                 <input id="data-x-${i}" type="number" class="input-cell" value="${xDisplay}" onfocus="this.value = dataPoints[${i}].x" onblur="truncateInput(this, dataPoints[${i}].x)" onchange="updateDataPoint(${i}, 'x', this.value, this)">
