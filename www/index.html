@@ -80,7 +80,7 @@
     </script>
   </head>
   <body>
-    <div class="min-h-screen bg-background text-foreground flex flex-col">
+    <div class="min-h-screen bg-slate-50/50 text-foreground flex flex-col">
       <!-- Navbar -->
       <header
         class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
@@ -519,7 +519,10 @@
                             <div class="tooltip-container">
                               <button
                                 id="btn-nerd-mode-toggle"
-                                onclick="toggleNerdMode(!nerdOpen); this.blur();"
+                                onclick="
+                                  toggleNerdMode(!nerdOpen);
+                                  this.blur();
+                                "
                                 class="hidden p-2 bg-background/95 backdrop-blur border shadow-md rounded-md text-muted-foreground hover:text-foreground transition-colors outline-none"
                               >
                                 <i data-lucide="braces" class="w-4 h-4"></i>
@@ -530,7 +533,10 @@
                             <div class="tooltip-container">
                               <button
                                 id="btn-game-mode-toggle"
-                                onclick="toggleGameMode(); this.blur();"
+                                onclick="
+                                  toggleGameMode();
+                                  this.blur();
+                                "
                                 class="p-2 bg-background/95 backdrop-blur border shadow-md rounded-md text-muted-foreground hover:text-foreground transition-colors outline-none"
                               >
                                 <i data-lucide="gamepad-2" class="w-4 h-4"></i>
@@ -540,7 +546,10 @@
 
                             <div class="tooltip-container">
                               <button
-                                onclick="toggleSettingsDropdown(); this.blur();"
+                                onclick="
+                                  toggleSettingsDropdown();
+                                  this.blur();
+                                "
                                 class="p-2 bg-background/95 backdrop-blur border shadow-md rounded-md text-muted-foreground hover:text-foreground transition-colors outline-none"
                               >
                                 <i data-lucide="settings" class="w-4 h-4"></i>
