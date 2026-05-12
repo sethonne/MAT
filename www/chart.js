@@ -171,6 +171,89 @@ const carPlugin = {
     ctx.arc(-cw/2 + 2, ch * 0.45, 2, 0, 2 * Math.PI);
     ctx.fill();
     
+    // Draw Force Vectors perfectly centered on the car body
+    if (gameMode && nerdOpen) {
+      // Undo the carDirection scale so our global X/Y vector logic is correct
+      ctx.save();
+      if (carDirection < 0) {
+        ctx.scale(-1, 1);
+      }
+
+      const drawArrow = (fromX, fromY, toX, toY, color, label) => {
+        const headlen = 8;
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const vecAngle = Math.atan2(dy, dx);
+        const len = Math.sqrt(dx*dx + dy*dy);
+        if (len < 5) return; // Too small to draw
+
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 2.5;
+        
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(vecAngle - Math.PI / 6), toY - headlen * Math.sin(vecAngle - Math.PI / 6));
+        ctx.lineTo(toX - headlen * Math.cos(vecAngle + Math.PI / 6), toY - headlen * Math.sin(vecAngle + Math.PI / 6));
+        ctx.lineTo(toX, toY);
+        ctx.fill();
+        
+        // Draw label upright (undo rotation)
+        ctx.translate(toX + 5, toY + 5);
+        ctx.rotate(-angle);
+        ctx.font = 'bold 12px Inter';
+        
+        const txtWidth = ctx.measureText(label).width;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(-2, -10, txtWidth + 4, 14, 3);
+        } else {
+          ctx.rect(-2, -10, txtWidth + 4, 14);
+        }
+        ctx.fill();
+        
+        ctx.fillStyle = color;
+        ctx.fillText(label, 0, 0);
+        ctx.restore();
+      };
+
+      const cx = 0;
+      const cy = ch / 2; // Exact visual center of the car body!
+      const VEC_SCALE = 40000;
+
+      // Velocity: acts strictly along the curve
+      if (Math.abs(carVelocity) > 0.001) {
+        const vx = carVelocity * 700; // increased scale for visualization
+        drawArrow(cx, cy, cx + vx, cy, '#10b981', 'Velocity');
+      }
+
+      // Gravity: global straight down. In local rotated frame:
+      const gx = 40 * Math.sin(angle);
+      const gy = 40 * Math.cos(angle);
+      drawArrow(cx, cy, cx + gx, cy + gy, '#8b5cf6', 'Gravity');
+
+      // Engine: acts strictly along the curve (local X)
+      if (Math.abs(lastEngAccel) > 0.0001) {
+        const ex = lastEngAccel * VEC_SCALE;
+        drawArrow(cx, cy, cx + ex, cy, '#ef4444', 'Engine');
+      }
+
+      // Drag: acts strictly along the curve (local X)
+      if (Math.abs(lastDragAccel) > 0.0001) {
+        const dx = lastDragAccel * 100000; // separate, much larger scale for drag
+        drawArrow(cx, cy, cx + dx, cy, '#3b82f6', 'Drag');
+      }
+
+      ctx.restore();
+    }
+    
     ctx.restore();
   }
 };
@@ -500,6 +583,32 @@ function updateChart() {
     }
   }
   
+  // Update dynamic MathJax labels for the polynomial degree n
+  const n = Math.max(0, controlPts.length - 1);
+  const lblPx = document.getElementById('nerd-lbl-px');
+  const lblSlopeMath = document.getElementById('nerd-lbl-slope-math');
+  const lblSlope = document.getElementById('nerd-lbl-slope');
+  
+  let mathChanged = false;
+  if (lblPx && lblPx.dataset.n !== String(n)) {
+    lblPx.innerHTML = `Elevation \\(P_{${n}}(x)\\)`;
+    lblPx.dataset.n = String(n);
+    mathChanged = true;
+  }
+  if (lblSlopeMath && lblSlopeMath.dataset.n !== String(n)) {
+    lblSlopeMath.innerHTML = `Slope \\(P_{${n}}'(x)\\)`;
+    lblSlopeMath.dataset.n = String(n);
+    mathChanged = true;
+  }
+  if (lblSlope && lblSlope.dataset.n !== String(n)) {
+    lblSlope.innerHTML = `Incline \\(\\theta = \\arctan(P_{${n}}'(x))\\)`;
+    lblSlope.dataset.n = String(n);
+    mathChanged = true;
+  }
+  if (mathChanged && window.MathJax) {
+    MathJax.typesetPromise([lblPx, lblSlopeMath, lblSlope]).catch(err => console.log(err));
+  }
+
   const datasets = [];
   
   // Line goes first (lowest z-index) — represents the ground in game mode
@@ -570,6 +679,7 @@ function animateLoop(time) {
     lastEngAccel = engineDirection * enginePower;
     
     const steps = dt / 16;
+    lastDragAccel = -carVelocity * (1 - friction);
     carVelocity += (lastGravAccel + lastEngAccel) * steps;
     carVelocity *= Math.pow(friction, steps);
     
@@ -698,7 +808,8 @@ function evalAtCarT() {
     const slopeRad = Math.atan2(-(p2.y - p1.y), p2.x - p1.x);
     slopeDeg = slopeRad * 180 / Math.PI;
   }
-  return { y, slopeDeg, direction: carDirection };
+  const slopeMath = denom === 0 ? 0 : (p2.y - p1.y) / denom;
+  return { y, slopeDeg, slopeMath, direction: carDirection };
 }
 
 function setText(id, text) {
@@ -710,30 +821,23 @@ function updateNerdPanel() {
   if (!plotData || plotData.error) {
     setText('nerd-cart', '—');
     setText('nerd-px', '—');
+    setText('nerd-slope-math', '—');
     setText('nerd-slope', '—');
-    setText('nerd-curve-info', '—');
-    setText('nerd-xrange', '—');
-    setText('nerd-yscale', '—');
-    setText('nerd-dt', '—');
     setText('nerd-vel', '—');
     setText('nerd-grav', '—');
     setText('nerd-eng', '—');
-    setText('nerd-drag', dragEnabled ? 'on' : 'off');
+    setText('nerd-drag-val', '—');
+    setText('nerd-dt', '—');
     return;
   }
   const carInfo = evalAtCarT();
   setText('nerd-cart', carT != null ? carT.toFixed(3) : '—');
   setText('nerd-px', carInfo ? carInfo.y.toFixed(3) : '—');
-  setText('nerd-slope', carInfo ? `${carInfo.slopeDeg.toFixed(2)}° (${carInfo.direction > 0 ? 'fwd' : 'rev'})` : '—');
-  setText('nerd-curve-info', `${curveData.length} pts`);
-  setText('nerd-xrange', `[${plotMinX.toFixed(2)}, ${plotMaxX.toFixed(2)}]`);
-  if (myChart && myChart.options && myChart.options.scales) {
-    const ys = myChart.options.scales.y;
-    setText('nerd-yscale', `[${ys.min?.toFixed?.(2) ?? '?'}, ${ys.max?.toFixed?.(2) ?? '?'}] (±15% pad)`);
-  }
-  setText('nerd-dt', lastDt.toFixed(1));
+  setText('nerd-slope-math', carInfo ? carInfo.slopeMath.toFixed(4) : '—');
+  setText('nerd-slope', carInfo ? `${carInfo.slopeDeg.toFixed(2)}°` : '—');
   setText('nerd-vel', carVelocity.toFixed(5));
   setText('nerd-grav', lastGravAccel.toFixed(5));
   setText('nerd-eng', lastEngAccel.toFixed(5));
-  setText('nerd-drag', dragEnabled ? (dragIdx >= 0 ? `dragging pt ${dragIdx + 1}` : 'on') : 'off');
+  setText('nerd-drag-val', lastDragAccel.toFixed(5));
+  setText('nerd-dt', `${Math.round(lastDt)} ms`);
 }

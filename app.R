@@ -7,7 +7,17 @@ ui <- htmlTemplate(
 
 server <- function(input, output, session) {
   rv <- reactiveValues(
-    data_points = data.frame(x = c(0, 2, 4), y = c(2, 0, 3)),
+    data_points = local({
+      n_pts <- 3
+      max_x <- 3
+      max_y <- 10
+      interval <- max_x / n_pts
+      
+      data.frame(
+        x = round(sapply(1:n_pts, function(i) runif(1, (i-1)*interval, i*interval)), 2),
+        y = round(runif(n_pts, 0, max_y), 2)
+      )
+    }),
     interp_points = data.frame(x = c(3.5)),
     calc_trigger = 1,
     interp_trigger = 1
