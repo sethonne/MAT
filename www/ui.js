@@ -168,3 +168,75 @@ function switchSubTab(subTabId) {
     $(window).trigger('resize');
   }
 }
+
+// Draggable Utility
+function makeDraggable(el, handle) {
+  let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+  handle.onmousedown = dragMouseDown;
+  handle.ontouchstart = dragMouseDown;
+
+  function dragMouseDown(e) {
+    e = e || window.event;
+    // Allow checkbox interaction
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+    
+    e.preventDefault();
+    if (e.type === 'touchstart') {
+      pos3 = e.touches[0].clientX;
+      pos4 = e.touches[0].clientY;
+    } else {
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+    }
+    document.onmouseup = closeDragElement;
+    document.ontouchend = closeDragElement;
+    document.onmousemove = elementDrag;
+    document.ontouchmove = elementDrag;
+  }
+
+  function elementDrag(e) {
+    e = e || window.event;
+    let clientX, clientY;
+    if (e.type === 'touchmove') {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
+    pos1 = pos3 - clientX;
+    pos2 = pos4 - clientY;
+    pos3 = clientX;
+    pos4 = clientY;
+    
+    // Switch from bottom-4 to top/left based positioning
+    const parentRect = el.parentElement.getBoundingClientRect();
+    let newTop = el.offsetTop - pos2;
+    let newLeft = el.offsetLeft - pos1;
+    
+    // Constrain to parent
+    newTop = Math.max(0, Math.min(newTop, parentRect.height - el.offsetHeight));
+    newLeft = Math.max(0, Math.min(newLeft, parentRect.width - el.offsetWidth));
+    
+    el.style.top = newTop + "px";
+    el.style.left = newLeft + "px";
+    el.style.bottom = "auto"; // Override the initial bottom-4
+  }
+
+  function closeDragElement() {
+    document.onmouseup = null;
+    document.ontouchend = null;
+    document.onmousemove = null;
+    document.ontouchmove = null;
+  }
+}
+
+// Initialize Nerd Panel Dragging
+document.addEventListener('DOMContentLoaded', function() {
+  const nerdPanel = document.getElementById('nerd-panel');
+  const nerdHeader = document.getElementById('nerd-panel-header');
+  if (nerdPanel && nerdHeader) {
+    makeDraggable(nerdPanel, nerdHeader);
+  }
+});

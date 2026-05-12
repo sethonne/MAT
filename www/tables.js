@@ -138,16 +138,8 @@ function removeDataPoint(idx) {
   }
 }
 
-function fmtError(v) {
-  if (v == null || isNaN(v)) return '—';
-  const a = Math.abs(v);
-  if (a === 0) return '0';
-  if (a < 0.001 || a > 9999) return v.toExponential(3);
-  return v.toFixed(3);
-}
 
 function renderInterpPoints() {
-  const errArr = (plotData && !plotData.error) ? ensureArray(plotData.interp_err) : [];
   let html = `<div class="border rounded-md overflow-hidden">
                 <table class="w-full text-sm text-left">
                   <thead class="bg-muted text-muted-foreground text-xs uppercase">
@@ -155,7 +147,6 @@ function renderInterpPoints() {
                       <th class="px-3 py-2 border-r font-semibold text-center w-10">#</th>
                       <th class="px-3 py-2 border-r font-semibold text-center">Eval X</th>
                       <th class="px-3 py-2 border-r font-semibold text-center">Result Y</th>
-                      <th class="px-3 py-2 border-r font-semibold text-center" title="Approximation using top-order divided difference as proxy for the next term">Est. Error</th>
                       <th class="px-2 py-2 w-10"></th>
                     </tr>
                   </thead>
@@ -167,14 +158,12 @@ function renderInterpPoints() {
     if (interpYArr[i] !== undefined) {
       yVal = interpYArr[i].toFixed(3);
     }
-    const errVal = fmtError(errArr[i]);
     const xDisplay = truncateDisplay(x);
 
     html += `<tr>
               <td class="px-3 py-2 border-r text-center text-muted-foreground font-mono bg-muted/20">${i + 1}</td>
               <td class="p-0 border-r bg-background"><input id="interp-x-${i}" type="number" class="input-cell font-mono text-sm" value="${xDisplay}" onfocus="this.value = interpX[${i}]" onblur="truncateInput(this, interpX[${i}])" onchange="updateInterpPoint(${i}, this.value, this)"></td>
               <td class="p-0 border-r bg-muted/20"><input type="text" readonly class="input-cell font-bold font-mono text-sm text-primary cursor-not-allowed" value="${yVal}"></td>
-              <td class="p-0 border-r bg-muted/20"><input type="text" readonly class="input-cell font-mono text-xs text-amber-700 cursor-not-allowed" value="${errVal}"></td>
               <td class="p-2 text-center">
                 <button class="text-muted-foreground hover:text-destructive w-full h-full flex justify-center items-center" onclick="removeInterpPoint(${i})">
                   <i data-lucide="x" class="w-4 h-4"></i>

@@ -1,3 +1,105 @@
+
+// ── Sine Hill Challenge ───────────────────────────────────────────
+
+function generateSineHillPoints() {
+  const xMin = plotMinX;
+  const xMax = plotMaxX;
+  const pts  = [];
+  for (let i = 0; i < hillNumPoints; i++) {
+    const t     = i / Math.max(hillNumPoints - 1, 1);
+    const x     = +(xMin + t * (xMax - xMin)).toFixed(3);
+    const phase = hillFrequency * 2 * Math.PI * t + hillPhase;
+    const y     = +(hillBaseline + hillAmplitude * Math.sin(phase)).toFixed(3);
+    pts.push({ x, y });
+  }
+  return pts;
+}
+
+function rebuildHillTerrain() {
+  if (!gameMode || !sineHillMode) return;
+  dataPoints = generateSineHillPoints();
+  renderDataPoints();
+  if (window.Shiny) Shiny.setInputValue('calc_btn', Math.random(), { priority: 'event' });
+  resetAnimation();
+}
+
+function toggleSineHillMode(on) {
+  sineHillMode = on;
+  const hillCtrl = document.getElementById('hill-controls');
+  if (hillCtrl) hillCtrl.classList.toggle('hidden', !on);
+
+  // Lock / unlock drag & add-point UI
+  const chkDrag   = document.getElementById('chk-drag-pts');
+  const btnAdd    = document.getElementById('btn-add-data');
+  if (on) {
+    if (chkDrag) { chkDrag.checked = false; dragEnabled = false; }
+    if (btnAdd)  btnAdd.classList.add('add-btn-disabled');
+  } else {
+    if (btnAdd)  btnAdd.classList.remove('add-btn-disabled');
+  }
+
+  if (on && gameMode) {
+    if (savedDataPoints === null)
+      savedDataPoints = dataPoints.map(p => ({ ...p }));
+    dataPoints = generateSineHillPoints();
+    renderDataPoints();
+    if (window.Shiny) Shiny.setInputValue('calc_btn', Math.random(), { priority: 'event' });
+    resetAnimation();
+  } else if (!on && savedDataPoints) {
+    dataPoints = savedDataPoints;
+    savedDataPoints = null;
+    renderDataPoints();
+    if (window.Shiny) Shiny.setInputValue('calc_btn', Math.random(), { priority: 'event' });
+  }
+}
+
+function randomizeHill() {
+  hillAmplitude = +(1 + Math.random() * 5).toFixed(1);
+  hillFrequency = +(0.5 + Math.random() * 3.5).toFixed(1);
+  hillPhase     = Math.random() * Math.PI * 2;
+  hillBaseline  = +(3 + Math.random() * 5).toFixed(1);
+
+  const sync = (rangeId, valId, val, fixed = 1) => {
+    const r = document.getElementById(rangeId);
+    const v = document.getElementById(valId);
+    if (r) r.value = val;
+    if (v) v.textContent = parseFloat(val).toFixed(fixed);
+  };
+  sync('range-amplitude', 'val-amplitude', hillAmplitude);
+  sync('range-frequency', 'val-frequency', hillFrequency);
+  sync('range-baseline',  'val-baseline',  hillBaseline);
+
+  rebuildHillTerrain();
+}
+
+function toggleGameMode() {
+  gameMode = !gameMode;
+
+  const btn = document.getElementById('btn-game-mode-toggle');
+  const nerdBtn = document.getElementById('btn-nerd-mode-toggle');
+
+  if (btn) {
+    btn.classList.toggle('btn-toggle-active', gameMode);
+    if (!gameMode) {
+      btn.classList.add('bg-background/95', 'text-muted-foreground');
+    } else {
+      btn.classList.remove('bg-background/95', 'text-muted-foreground');
+    }
+  }
+
+  if (nerdBtn) {
+    nerdBtn.classList.toggle('hidden', !gameMode);
+    // Auto-disable nerd mode when game mode is turned off
+    if (!gameMode && nerdOpen) {
+      toggleNerdMode(false);
+    }
+  }
+
+  updateChart();
+}
+
+// ── Original helpers ──────────────────────────────────────────────
+
 function updateSpeed(val) {
   carSpeed = parseFloat(val);
 }
@@ -233,28 +335,43 @@ const carPlugin = {
 
       const cx = 0;
       const cy = ch / 2; // Exact visual center of the car body!
-      const VEC_SCALE = 40000;
+      const physicsScale = (plotMaxX - plotMinX) / 10.0;
+      const gravityConst = 0.0008 * carSpeed * physicsScale;
+      const VEC_SCALE = 50000 / physicsScale;
+      const VEL_VISUAL_SCALE = 500 / physicsScale;
+      const DRAG_VISUAL_SCALE = VEC_SCALE; // Use same scale as engine for physical comparison
 
       // Velocity: acts strictly along the curve
-      if (Math.abs(carVelocity) > 0.001) {
-        const vx = carVelocity * 700; // increased scale for visualization
+      if (showVelVector && Math.abs(carVelocity) > 0.001) {
+        const vx = carVelocity * VEL_VISUAL_SCALE; 
         drawArrow(cx, cy, cx + vx, cy, '#10b981', 'Velocity');
       }
 
       // Gravity: global straight down. In local rotated frame:
-      const gx = 40 * Math.sin(angle);
-      const gy = 40 * Math.cos(angle);
-      drawArrow(cx, cy, cx + gx, cy + gy, '#8b5cf6', 'Gravity');
+      if (showGravVector) {
+        const gPixels = gravityConst * VEC_SCALE;
+        const gx = gPixels * Math.sin(angle); // Longitudinal component
+        const gy = gPixels * Math.cos(angle); // Normal component
+        
+        // Total Gravity (Main vector)
+        drawArrow(cx, cy, cx + gx, cy + gy, '#8b5cf6', 'Gravity (Total)');
+        
+        // Decomposed Components (Subtle)
+        // Normal Force (points strictly along local Y axis)
+        drawArrow(cx, cy, cx, cy + gy, 'rgba(139, 92, 246, 0.5)', 'Normal Force');
+        // Longitudinal Gravity (points strictly along local X axis)
+        drawArrow(cx, cy, cx + gx, cy, 'rgba(139, 92, 246, 0.5)', 'Gravity (Slope)');
+      }
 
       // Engine: acts strictly along the curve (local X)
-      if (Math.abs(lastEngAccel) > 0.0001) {
+      if (showEngVector && Math.abs(lastEngAccel) > 0.0001) {
         const ex = lastEngAccel * VEC_SCALE;
         drawArrow(cx, cy, cx + ex, cy, '#ef4444', 'Engine');
       }
 
       // Drag: acts strictly along the curve (local X)
-      if (Math.abs(lastDragAccel) > 0.0001) {
-        const dx = lastDragAccel * 100000; // separate, much larger scale for drag
+      if (showDragVector && Math.abs(lastDragAccel) > 0.0001) {
+        const dx = lastDragAccel * DRAG_VISUAL_SCALE;
         drawArrow(cx, cy, cx + dx, cy, '#3b82f6', 'Drag');
       }
 
@@ -578,18 +695,38 @@ function updateChart() {
   const chartCard = document.getElementById('chart-card');
   const mobCtrl = document.getElementById('mobile-controls');
   const gameInds = document.getElementById('game-indicators');
+  const hillSection = document.getElementById('hill-challenge-section');
   if (chartCard) {
     if (!gameMode) {
       chartCard.classList.remove('border', 'shadow-sm');
-      if (mobCtrl) mobCtrl.classList.add('hidden');
-      if (gameInds) gameInds.classList.add('hidden');
+      if (mobCtrl)     mobCtrl.classList.add('hidden');
+      if (gameInds)    gameInds.classList.add('hidden');
+      if (hillSection) hillSection.classList.add('hidden');
       // Clear highlights when exiting game mode
       document.querySelectorAll('.active-row-tint').forEach(el => el.classList.remove('active-row-tint'));
       lastActiveRowIdx = -1;
+
+      // Auto-cleanup: exit sine hill mode when game mode is turned off
+      if (sineHillMode) {
+        sineHillMode = false;
+        const chkSine = document.getElementById('chk-sine-hill');
+        if (chkSine) chkSine.checked = false;
+        const hillCtrl = document.getElementById('hill-controls');
+        if (hillCtrl) hillCtrl.classList.add('hidden');
+        const btnAdd = document.getElementById('btn-add-data');
+        if (btnAdd) btnAdd.classList.remove('add-btn-disabled');
+        if (savedDataPoints) {
+          dataPoints = savedDataPoints;
+          savedDataPoints = null;
+          renderDataPoints();
+          if (window.Shiny) Shiny.setInputValue('calc_btn', Math.random(), { priority: 'event' });
+        }
+      }
     } else {
       chartCard.classList.add('border', 'shadow-sm');
-      if (mobCtrl) mobCtrl.classList.remove('hidden');
-      if (gameInds) gameInds.classList.remove('hidden');
+      if (mobCtrl)     mobCtrl.classList.remove('hidden');
+      if (gameInds)    gameInds.classList.remove('hidden');
+      if (hillSection) hillSection.classList.remove('hidden');
     }
   }
   
@@ -723,51 +860,23 @@ function updateTableHighlight(newX, oldX) {
 }
 
 function animateLoop(time) {
+  const dt = (time - lastTime) || 16;
+  lastDt = dt;
+
+  // Run the external physics engine
+  updatePhysics(dt);
+
+  // Update visual state (Chart.js redraw)
   if (gameMode && playing && plotData && !plotData.error && curveData.length > 0) {
-    const dt = (time - lastTime) || 16;
-    lastDt = dt;
-    
-    const evalData = evalAtCarT();
-    const slopeRad = evalData ? evalData.slopeDeg * Math.PI / 180 : 0;
-    
-    // Physics constants
-    const enginePower = 0.001 * carSpeed;
-    const gravityConst = 0.0008 * carSpeed;
-    const friction = 0.995; // Retain 99.5% velocity per 16ms (great for coasting)
-    
-    // Math.sin(slopeRad) is positive when going downhill to the right.
-    lastGravAccel = Math.sin(slopeRad) * gravityConst;
-    lastEngAccel = engineDirection * enginePower;
-    
-    const steps = dt / 16;
-    lastDragAccel = -carVelocity * (1 - friction);
-    carVelocity += (lastGravAccel + lastEngAccel) * steps;
-    carVelocity *= Math.pow(friction, steps);
-    
-    const oldT = carT;
-    carT += carVelocity * steps;
-    updateTableHighlight(carT, oldT);
-
-    // Update facing direction based on velocity
-    if (carVelocity > 0.01) carDirection = 1;
-    else if (carVelocity < -0.01) carDirection = -1;
-
-    // Bounce back at edges instead of resetting
-    const edgeL = plotMinX + 0.2;
-    const edgeR = plotMaxX - 0.2;
-    if (carT > edgeR) {
-      carT = edgeR;
-      carVelocity = -Math.abs(carVelocity) * 0.5; // lose some energy on bounce
-    } else if (carT < edgeL) {
-      carT = edgeL;
-      carVelocity = Math.abs(carVelocity) * 0.5; // lose some energy on bounce
-    }
     if (myChart) myChart.update('none');
   }
+
+  // Update debug panel at 15fps
   if (nerdOpen && (time - lastNerdTime > 66)) {
     lastNerdTime = time;
     updateNerdPanel();
   }
+
   lastTime = time;
   requestAnimationFrame(animateLoop);
 }
@@ -785,19 +894,19 @@ function updateEngineDirection() {
   if (indLeft) {
     if (engineKeys.left) {
       indLeft.classList.add('bg-primary', 'border-primary', 'text-primary-foreground');
-      indLeft.classList.remove('bg-background/80', 'text-muted-foreground', 'border-border');
+      indLeft.classList.remove('bg-background/95', 'text-muted-foreground', 'border-border');
     } else {
       indLeft.classList.remove('bg-primary', 'border-primary', 'text-primary-foreground');
-      indLeft.classList.add('bg-background/80', 'text-muted-foreground', 'border-border');
+      indLeft.classList.add('bg-background/95', 'text-muted-foreground', 'border-border');
     }
   }
   if (indRight) {
     if (engineKeys.right) {
       indRight.classList.add('bg-primary', 'border-primary', 'text-primary-foreground');
-      indRight.classList.remove('bg-background/80', 'text-muted-foreground', 'border-border');
+      indRight.classList.remove('bg-background/95', 'text-muted-foreground', 'border-border');
     } else {
       indRight.classList.remove('bg-primary', 'border-primary', 'text-primary-foreground');
-      indRight.classList.add('bg-background/80', 'text-muted-foreground', 'border-border');
+      indRight.classList.add('bg-background/95', 'text-muted-foreground', 'border-border');
     }
   }
 }
@@ -842,38 +951,22 @@ bindMobileControls();
 
 function toggleNerdMode(on) {
   nerdOpen = !!on;
-  const el = document.getElementById('nerd-panel');
-  if (el) el.classList.toggle('hidden', !nerdOpen);
+  const panel = document.getElementById('nerd-panel');
+  if (panel) panel.classList.toggle('hidden', !nerdOpen);
+
+  const btn = document.getElementById('btn-nerd-mode-toggle');
+  if (btn) {
+    btn.classList.toggle('btn-toggle-active', nerdOpen);
+    if (!nerdOpen) {
+      btn.classList.add('bg-background/90', 'text-muted-foreground');
+    } else {
+      btn.classList.remove('bg-background/90', 'text-muted-foreground');
+    }
+  }
+
   if (nerdOpen) updateNerdPanel();
 }
 
-function evalAtCarT() {
-  if (!curveData.length || carT == null) return null;
-  let idx = 0;
-  while (idx < curveData.length - 1 && curveData[idx].x < carT) idx++;
-  const p1 = curveData[Math.max(0, idx - 1)];
-  const p2 = curveData[idx];
-  if (!p1 || !p2) return null;
-  const denom = p2.x - p1.x;
-  const factor = denom === 0 ? 0 : (carT - p1.x) / denom;
-  const y = p1.y + factor * (p2.y - p1.y);
-  // Compute angle in pixel-space if chart is available
-  let slopeDeg = 0;
-  if (myChart && myChart.scales) {
-    const xAxis = myChart.scales.x;
-    const yAxis = myChart.scales.y;
-    const px1 = xAxis.getPixelForValue(p1.x);
-    const py1 = yAxis.getPixelForValue(p1.y);
-    const px2 = xAxis.getPixelForValue(p2.x);
-    const py2 = yAxis.getPixelForValue(p2.y);
-    slopeDeg = Math.atan2(py2 - py1, px2 - px1) * 180 / Math.PI;
-  } else {
-    const slopeRad = Math.atan2(-(p2.y - p1.y), p2.x - p1.x);
-    slopeDeg = slopeRad * 180 / Math.PI;
-  }
-  const slopeMath = denom === 0 ? 0 : (p2.y - p1.y) / denom;
-  return { y, slopeDeg, slopeMath, direction: carDirection };
-}
 
 function setText(id, text) {
   const el = document.getElementById(id);

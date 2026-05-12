@@ -10,7 +10,7 @@ var dataPoints = Array.from({ length: INIT_NUM_POINTS }, (_, i) => {
     y: Number((Math.random() * INIT_MAX_Y).toFixed(2))
   };
 });
-var interpX = [3.5];
+var interpX = [0];
 var myChart = null;
 var curveData = [];
 var controlPts = [];
@@ -38,5 +38,18 @@ var dragFlashIdx = -1;
 var dragFlashUntil = 0;
 
 var nerdOpen = false;
+var showVelVector = true;
+var showGravVector = true;
+var showEngVector = true;
+var showDragVector = true;
+
+// -- Sine Hill Challenge -------------------------------------------
+var sineHillMode    = false;  // true when auto-generated hills are active
+var savedDataPoints = null;   // backup of user points before hill generation
+var hillAmplitude   = 3;      // A   — peak height of each hill
+var hillFrequency   = 1;      // w   — number of full cycles across the range
+var hillNumPoints   = 7;      // n   — number of sample points (control pts)
+var hillPhase       = 0;      // phi — horizontal phase shift
+var hillBaseline    = 5;      // b   — vertical offset (midline elevation)
 
 const ensureArray = (v) => Array.isArray(v) ? v : (v != null ? [v] : []);
