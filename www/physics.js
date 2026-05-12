@@ -55,6 +55,32 @@ function updatePhysics(dt) {
   const v = carVelocity;
 
   // Force-Summation Model
+  // 0. Fuel Logic
+  const engineOn = engineDirection !== 0 && fuel > 0;
+  
+  // Faster consumption when pressing keys
+  if (engineDirection !== 0 && fuel > 0) {
+    fuel -= 0.3 * steps; 
+  }
+  // Passive consumption when moving
+  if (Math.abs(v) > 0.001 && fuel > 0) {
+    fuel -= 0.05 * Math.abs(v) * steps;
+  }
+  
+  if (fuel < 0) fuel = 0;
+  
+  // Fuel Collection
+  fuelCans.forEach(can => {
+    if (!can.collected) {
+      const dx = carT - can.x;
+      // Simple collision check (distance < 0.3)
+      if (Math.abs(dx) < 0.3) {
+        can.collected = true;
+        fuel = Math.min(100, fuel + 30); // Refill 30% fuel
+      }
+    }
+  });
+
   // 1. Normal Force (N)
   const N = gravityConst * Math.cos(slopeRad);
 
@@ -70,7 +96,7 @@ function updatePhysics(dt) {
 
   // Store for debug panel
   lastGravAccel = a_g;
-  lastEngAccel = engineDirection * enginePower;
+  lastEngAccel = engineOn ? (engineDirection * enginePower) : 0;
   lastDragAccel = a_drag + a_rr;
 
   const totalAccel = lastEngAccel + a_g + a_drag + a_rr;

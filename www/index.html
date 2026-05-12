@@ -544,6 +544,20 @@
                               <span class="tooltip-text">Toggle Game Mode</span>
                             </div>
 
+                            <div id="regen-tool-container" class="tooltip-container">
+                              <button
+                                id="btn-regenerate-points"
+                                onclick="
+                                  randomizePoints();
+                                  this.blur();
+                                "
+                                class="p-2 bg-background/95 backdrop-blur border shadow-md rounded-md text-muted-foreground hover:text-foreground transition-colors outline-none"
+                              >
+                                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                              </button>
+                              <span class="tooltip-text">Regenerate Points</span>
+                            </div>
+
                             <div class="tooltip-container">
                               <button
                                 onclick="
@@ -824,29 +838,104 @@
                             ></canvas>
                           </div>
 
+
                           <!-- Game Indicators -->
                           <div
                             id="game-indicators"
                             class="absolute top-3 left-3 hidden group z-[60]"
                           >
-                            <div class="flex gap-2 relative">
-                              <div
-                                id="ind-left"
-                                class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center font-bold text-muted-foreground shadow-md transition-colors"
-                              >
-                                A
+                            <div class="flex items-center gap-2 relative">
+                              <div class="flex gap-2">
+                                <div
+                                  id="ind-left"
+                                  class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center font-bold text-muted-foreground shadow-md transition-all cursor-pointer select-none active:scale-95"
+                                  onmousedown="engineKeys.left = true; updateEngineDirection();"
+                                  onmouseup="engineKeys.left = false; updateEngineDirection();"
+                                  onmouseleave="engineKeys.left = false; updateEngineDirection();"
+                                >
+                                  A
+                                </div>
+                                <div
+                                  id="ind-right"
+                                  class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center font-bold text-muted-foreground shadow-md transition-all cursor-pointer select-none active:scale-95"
+                                  onmousedown="engineKeys.right = true; updateEngineDirection();"
+                                  onmouseup="engineKeys.right = false; updateEngineDirection();"
+                                  onmouseleave="engineKeys.right = false; updateEngineDirection();"
+                                >
+                                  D
+                                </div>
                               </div>
+
+                              <!-- Fuel Indicator -->
                               <div
-                                id="ind-right"
-                                class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center font-bold text-muted-foreground shadow-md transition-colors"
+                                id="fuel-indicator-wrapper"
+                                class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center shadow-md relative overflow-hidden group/fuel"
                               >
-                                D
+                                <div
+                                  id="fuel-fill"
+                                  class="absolute bottom-0 left-0 w-full bg-orange-500/80"
+                                  style="height: 100%"
+                                ></div>
+                                <i
+                                  data-lucide="fuel"
+                                  class="w-5 h-5 text-foreground relative z-10"
+                                ></i>
+                                <div
+                                  class="absolute left-0 top-[110%] mt-1 whitespace-nowrap text-[11px] font-medium text-primary-foreground bg-primary/95 px-2 py-1 rounded shadow-md opacity-0 transition-opacity group-hover/fuel:opacity-100 pointer-events-none"
+                                >
+                                  Fuel: <span id="fuel-value">100</span>%
+                                </div>
                               </div>
+
+                              <!-- Restart Button -->
+                              <button
+                                id="btn-restart"
+                                onclick="resetAnimation()"
+                                class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center text-muted-foreground hover:text-foreground shadow-md transition-all active:scale-95"
+                              >
+                                <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                              </button>
+
                               <div
                                 class="absolute left-0 top-[110%] mt-1 whitespace-nowrap text-[11px] font-medium text-primary-foreground bg-primary/95 px-2 py-1 rounded shadow-md opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none"
                               >
                                 Use A/D or Arrows to Drive
                               </div>
+                            </div>
+                          </div>
+
+                          <!-- Game Status Overlay -->
+                          <div
+                            id="game-status-overlay"
+                            class="hidden absolute inset-0 z-[70] flex items-center justify-center pointer-events-none bg-black/40 backdrop-blur-[2px] transition-opacity duration-300"
+                          >
+                            <div
+                              id="status-card"
+                              class="bg-card/95 backdrop-blur border shadow-2xl rounded-2xl p-8 text-center scale-90 opacity-0 transition-all duration-500 pointer-events-auto max-w-[300px]"
+                            >
+                              <div
+                                id="status-icon-container"
+                                class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                              >
+                                <i
+                                  id="status-icon"
+                                  data-lucide="trophy"
+                                  class="w-10 h-10"
+                                ></i>
+                              </div>
+                              <h2 id="status-title" class="text-2xl font-bold mb-2">
+                                You Win!
+                              </h2>
+                              <p id="status-desc" class="text-muted-foreground mb-6">
+                                Difficulty Level 1 Completed
+                              </p>
+                              <button
+                                id="status-btn"
+                                onclick="handleGameStatusAction()"
+                                class="w-full bg-primary text-primary-foreground py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                              >
+                                Next Level
+                              </button>
                             </div>
                           </div>
 

@@ -95,6 +95,12 @@ function toggleGameMode(state) {
     }
   }
 
+  // Hide modals when game mode is turned off
+  if (!gameMode) {
+    const overlay = document.getElementById('game-status-overlay');
+    if (overlay) overlay.classList.add('hidden');
+  }
+
   updateChart();
 }
 
@@ -112,6 +118,16 @@ function resetAnimation() {
   if (plotData && plotData.xs && plotData.xs.length > 0) {
     carT = plotMinX + 0.2;
     carDirection = 1;
+    carVelocity = 0;
+    fuel = 100;
+    fuelCans.forEach(c => c.collected = false);
+
+    // Reset game status
+    gameWon = false;
+    gameLost = false;
+    const overlay = document.getElementById('game-status-overlay');
+    if (overlay) overlay.classList.add('hidden');
+
     // Clear point highlights on reset
     lastActiveRowIdx = -1;
     passedPoints = new Array(controlPts.length).fill(false);
@@ -161,8 +177,28 @@ Shiny.addCustomMessageHandler('update_plot_data', function(msg) {
   if (carT === null || carT < plotMinX || carT > plotMaxX) {
     carT = plotMinX + 0.2;
   }
-  // Reset passed points when new data arrives
+  // Reset passed points and fuel when new data arrives
   passedPoints = new Array(controlPts.length).fill(false);
+  fuel = 100;
+  
+  // Spawn fuel cans at random control points
+  // Chance decreases as difficultyLevel increases
+  const baseChance = 0.35;
+  const currentChance = Math.max(0.1, baseChance - (difficultyLevel - 1) * 0.025);
+  
+  fuelCans = controlPts.map(p => {
+    if (Math.random() < currentChance) {
+      return { x: p.x, y: p.y + 1.2, collected: false }; // Spawn slightly above the point
+    }
+    return null;
+  }).filter(c => c !== null);
+
+  // Balanced: ensure at least one fuel can spawns
+  if (fuelCans.length === 0 && controlPts.length > 0) {
+    const idx = Math.floor(Math.random() * controlPts.length);
+    const p = controlPts[idx];
+    fuelCans.push({ x: p.x, y: p.y + 1.2, collected: false });
+  }
 
   updateChart();
   renderInterpPoints();
@@ -379,6 +415,92 @@ const carPlugin = {
     }
     
     ctx.restore();
+
+    // Draw Fuel Cans
+    fuelCans.forEach(can => {
+        if (can.collected) return;
+        const px = xAxis.getPixelForValue(can.x);
+        const py = yAxis.getPixelForValue(can.y);
+        
+        ctx.save();
+        ctx.translate(px, py);
+        
+        // Animated float effect
+        const float = Math.sin(Date.now() / 300) * 5;
+        ctx.translate(0, float);
+
+        // Fuel can SVG/Drawing
+        const w = 24, h = 30;
+        
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.15)';
+        ctx.beginPath();
+        ctx.ellipse(0, h/2 + 10 - float, 10, 3, 0, 0, 2*Math.PI);
+        ctx.fill();
+
+        // Outline / Border
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+
+        // Body (Background/Empty state)
+        ctx.fillStyle = '#444'; 
+        ctx.beginPath();
+        // Slightly tapered body for a more "can" look
+        ctx.moveTo(-w/2, h/2);
+        ctx.lineTo(w/2, h/2);
+        ctx.lineTo(w/2 - 2, -h/2);
+        ctx.lineTo(-w/2 + 2, -h/2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Colored Fill (100% for spawned cans)
+        const fillLevel = 1.0; 
+        const fillH = h * fillLevel;
+        ctx.fillStyle = 'hsl(142, 71%, 45%)'; // Match HUD Green
+        ctx.beginPath();
+        if (fillLevel > 0.1) {
+            ctx.moveTo(-w/2, h/2);
+            ctx.lineTo(w/2, h/2);
+            const topY = h/2 - fillH;
+            ctx.lineTo(w/2 - 1, topY);
+            ctx.lineTo(-w/2 + 1, topY);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Redraw outline on top of fill
+        ctx.beginPath();
+        ctx.moveTo(-w/2, h/2);
+        ctx.lineTo(w/2, h/2);
+        ctx.lineTo(w/2 - 2, -h/2);
+        ctx.lineTo(-w/2 + 2, -h/2);
+        ctx.closePath();
+        ctx.stroke();
+
+        // Handle
+        ctx.beginPath();
+        ctx.moveTo(-w/2 + 6, -h/2 + 2);
+        ctx.lineTo(-w/2 + 6, -h/2 - 5);
+        ctx.lineTo(w/2 - 6, -h/2 - 5);
+        ctx.lineTo(w/2 - 6, -h/2 + 2);
+        ctx.stroke();
+
+        // Spout
+        ctx.beginPath();
+        ctx.moveTo(w/2 - 4, -h/2);
+        ctx.lineTo(w/2 + 4, -h/2 - 4);
+        ctx.stroke();
+
+        // Label/Fill indicator on can
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 10px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText('GAS', 0, 4);
+
+        ctx.restore();
+    });
   }
 };
 
@@ -702,31 +824,19 @@ function updateChart() {
       if (mobCtrl)     mobCtrl.classList.add('hidden');
       if (gameInds)    gameInds.classList.add('hidden');
       if (hillSection) hillSection.classList.add('hidden');
+      const regenTools = document.getElementById('regen-tool-container');
+      if (regenTools) regenTools.classList.remove('hidden');
+
       // Clear highlights when exiting game mode
       document.querySelectorAll('.active-row-tint').forEach(el => el.classList.remove('active-row-tint'));
       lastActiveRowIdx = -1;
-
-      // Auto-cleanup: exit sine hill mode when game mode is turned off
-      if (sineHillMode) {
-        sineHillMode = false;
-        const chkSine = document.getElementById('chk-sine-hill');
-        if (chkSine) chkSine.checked = false;
-        const hillCtrl = document.getElementById('hill-controls');
-        if (hillCtrl) hillCtrl.classList.add('hidden');
-        const btnAdd = document.getElementById('btn-add-data');
-        if (btnAdd) btnAdd.classList.remove('add-btn-disabled');
-        if (savedDataPoints) {
-          dataPoints = savedDataPoints;
-          savedDataPoints = null;
-          renderDataPoints();
-          if (window.Shiny) Shiny.setInputValue('calc_btn', Math.random(), { priority: 'event' });
-        }
-      }
     } else {
       chartCard.classList.add('border', 'shadow-sm');
       if (mobCtrl)     mobCtrl.classList.remove('hidden');
       if (gameInds)    gameInds.classList.remove('hidden');
       if (hillSection) hillSection.classList.remove('hidden');
+      const regenTools = document.getElementById('regen-tool-container');
+      if (regenTools) regenTools.classList.add('hidden');
     }
   }
   
@@ -866,6 +976,9 @@ function animateLoop(time) {
   // Run the external physics engine
   updatePhysics(dt);
 
+  // Check win/loss
+  checkGameStatus();
+
   // Update visual state (Chart.js redraw)
   if (gameMode && playing && plotData && !plotData.error && curveData.length > 0) {
     if (myChart) myChart.update('none');
@@ -877,8 +990,27 @@ function animateLoop(time) {
     updateNerdPanel();
   }
 
+  // Update Fuel UI
+  updateFuelUI();
+
   lastTime = time;
   requestAnimationFrame(animateLoop);
+}
+
+function updateFuelUI() {
+    const fill = document.getElementById('fuel-fill');
+    const valText = document.getElementById('fuel-value');
+    if (fill) {
+        fill.style.height = fuel + '%';
+        // Color transition based on fuel level
+        if (fuel > 50) fill.style.backgroundColor = 'hsl(142 71% 45%)'; // Green
+        else if (fuel > 20) fill.style.backgroundColor = 'hsl(38 92% 50%)'; // Orange
+        else fill.style.backgroundColor = 'hsl(0 84% 60%)'; // Red
+    }
+    if (valText) valText.textContent = Math.round(fuel);
+    
+    // If fuel is 0, update engine indicators to reflect inability to drive
+    updateEngineDirection();
 }
 requestAnimationFrame(animateLoop);
 
@@ -891,23 +1023,47 @@ function updateEngineDirection() {
   
   const indLeft = document.getElementById('ind-left');
   const indRight = document.getElementById('ind-right');
+  const btnL = document.getElementById('btn-left');
+  const btnR = document.getElementById('btn-right');
+  
+  const isOutOfFuel = fuel <= 0;
+
   if (indLeft) {
-    if (engineKeys.left) {
+    if (engineKeys.left && !isOutOfFuel) {
       indLeft.classList.add('bg-primary', 'border-primary', 'text-primary-foreground');
-      indLeft.classList.remove('bg-background/95', 'text-muted-foreground', 'border-border');
+      indLeft.classList.remove('bg-background/95', 'text-muted-foreground', 'border-border', 'opacity-50', 'grayscale');
     } else {
       indLeft.classList.remove('bg-primary', 'border-primary', 'text-primary-foreground');
       indLeft.classList.add('bg-background/95', 'text-muted-foreground', 'border-border');
+      if (isOutOfFuel) {
+        indLeft.classList.add('opacity-50', 'grayscale', 'border-destructive/30');
+      } else {
+        indLeft.classList.remove('opacity-50', 'grayscale', 'border-destructive/30');
+      }
     }
   }
   if (indRight) {
-    if (engineKeys.right) {
+    if (engineKeys.right && !isOutOfFuel) {
       indRight.classList.add('bg-primary', 'border-primary', 'text-primary-foreground');
-      indRight.classList.remove('bg-background/95', 'text-muted-foreground', 'border-border');
+      indRight.classList.remove('bg-background/95', 'text-muted-foreground', 'border-border', 'opacity-50', 'grayscale');
     } else {
       indRight.classList.remove('bg-primary', 'border-primary', 'text-primary-foreground');
       indRight.classList.add('bg-background/95', 'text-muted-foreground', 'border-border');
+      if (isOutOfFuel) {
+        indRight.classList.add('opacity-50', 'grayscale', 'border-destructive/30');
+      } else {
+        indRight.classList.remove('opacity-50', 'grayscale', 'border-destructive/30');
+      }
     }
+  }
+
+  if (btnL) {
+    btnL.classList.toggle('opacity-50', isOutOfFuel);
+    btnL.classList.toggle('grayscale', isOutOfFuel);
+  }
+  if (btnR) {
+    btnR.classList.toggle('opacity-50', isOutOfFuel);
+    btnR.classList.toggle('grayscale', isOutOfFuel);
   }
 }
 
@@ -967,6 +1123,132 @@ function toggleNerdMode(on) {
   if (nerdOpen) updateNerdPanel();
 }
 
+function checkGameStatus() {
+  if (!gameMode || gameWon || gameLost) return;
+
+  const allPassed = passedPoints.length > 0 && passedPoints.every(p => p === true);
+  if (allPassed) {
+    showGameStatus('win');
+    return;
+  }
+
+  const vehicleStopped = Math.abs(carVelocity) < 0.001;
+  const outOfFuel = fuel <= 0;
+  if (outOfFuel && vehicleStopped && !allPassed) {
+    showGameStatus('lose');
+  }
+}
+
+function showGameStatus(status) {
+  const overlay = document.getElementById('game-status-overlay');
+  const card = document.getElementById('status-card');
+  const title = document.getElementById('status-title');
+  const desc = document.getElementById('status-desc');
+  const icon = document.getElementById('status-icon');
+  const btn = document.getElementById('status-btn');
+  const iconCont = document.getElementById('status-icon-container');
+
+  if (!overlay || !card) return;
+
+  if (status === 'win') {
+    if (difficultyLevel >= 12) {
+      title.textContent = 'Game Completed!';
+      desc.textContent = 'You have mastered all levels!';
+      btn.textContent = 'Restart Journey';
+      icon.setAttribute('data-lucide', 'party-popper');
+      iconCont.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-yellow-100 text-yellow-600';
+    } else {
+      title.textContent = 'You Win!';
+      desc.textContent = `Difficulty Level ${difficultyLevel} Completed`;
+      btn.textContent = 'Next Level';
+      icon.setAttribute('data-lucide', 'trophy');
+      iconCont.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-green-100 text-green-600';
+    }
+  } else {
+    title.textContent = 'Game Over';
+    desc.textContent = 'Out of fuel and momentum!';
+    btn.textContent = 'Try Again';
+    icon.setAttribute('data-lucide', 'skull');
+    iconCont.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-100 text-red-600';
+  }
+
+  if (window.lucide) lucide.createIcons();
+
+  overlay.classList.remove('hidden');
+  playing = false; // Pause animation
+  
+  setTimeout(() => {
+    overlay.classList.remove('pointer-events-none');
+    card.classList.remove('scale-90', 'opacity-0');
+    card.classList.add('scale-100', 'opacity-100');
+    if (status === 'win') gameWon = true;
+    else gameLost = true;
+  }, 10);
+}
+
+function handleGameStatusAction() {
+  const overlay = document.getElementById('game-status-overlay');
+  const card = document.getElementById('status-card');
+  
+  const wasWin = gameWon;
+  const isFinalWin = wasWin && difficultyLevel >= 12;
+  
+  card.classList.add('scale-90', 'opacity-0');
+  card.classList.remove('scale-100', 'opacity-100');
+  
+  setTimeout(() => {
+    overlay.classList.add('hidden');
+    if (wasWin) {
+      if (isFinalWin) {
+        difficultyLevel = 1;
+      } else {
+        difficultyLevel++;
+      }
+      increaseDifficulty();
+      gameWon = false;
+      resetAnimation();
+      playing = true; // Resume
+    } else {
+      gameLost = false;
+      resetAnimation();
+      playing = true; // Resume
+    }
+  }, 500);
+}
+
+function increaseDifficulty() {
+  if (!sineHillMode) {
+    const chk = document.getElementById('chk-sine-hill');
+    if (chk) {
+      chk.checked = true;
+      toggleSineHillMode(true);
+    }
+  }
+
+  // Complexity Balance: More points = Less frequency
+  // Difficulty Level increases both the total "challenge score"
+  hillNumPoints = Math.min(15, 7 + Math.floor((difficultyLevel - 1) / 0.8));
+  
+  // Frequency starts higher and is tempered by point density
+  const difficultyFactor = 1 + (difficultyLevel - 1) * 0.5;
+  hillFrequency = Math.max(1.2, Math.min(8, (difficultyFactor * 10) / hillNumPoints));
+  
+  hillAmplitude = Math.min(7, 3 + (difficultyLevel - 1) * 0.4);
+  
+  const sync = (rangeId, valId, val, fixed = 1) => {
+    const r = document.getElementById(rangeId);
+    const v = document.getElementById(valId);
+    if (r) r.value = val;
+    if (v) v.textContent = parseFloat(val).toFixed(fixed);
+  };
+  
+  sync('range-amplitude', 'val-amplitude', hillAmplitude);
+  sync('range-frequency', 'val-frequency', hillFrequency);
+  sync('range-numpts',    'val-numpts',    hillNumPoints, 0);
+
+  rebuildHillTerrain();
+}
+
 
 function setText(id, text) {
   const el = document.getElementById(id);
@@ -996,4 +1278,22 @@ function updateNerdPanel() {
   setText('nerd-eng', lastEngAccel.toFixed(5));
   setText('nerd-drag-val', lastDragAccel.toFixed(5));
   setText('nerd-dt', `${Math.round(lastDt)} ms`);
+}
+function randomizePoints() {
+  if (sineHillMode) {
+    randomizeHill();
+  } else {
+    // Generate 5-7 random points
+    const count = Math.floor(Math.random() * 3) + 5;
+    const newPts = [];
+    for (let i = 0; i < count; i++) {
+      newPts.push({
+        x: i * 2,
+        y: Math.round((Math.random() * 10 - 5) * 10) / 10
+      });
+    }
+    dataPoints = newPts;
+    renderDataPoints();
+    if (window.Shiny) Shiny.setInputValue('calc_btn', Math.random(), { priority: 'event' });
+  }
 }

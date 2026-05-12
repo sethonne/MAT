@@ -27,6 +27,12 @@ var lastGravAccel = 0;
 var lastEngAccel = 0;
 var lastDragAccel = 0;
 var showPts = true;
+var fuel = 100; // 0 to 100
+var fuelCans = []; // array of {x, y, collected}
+var gameWon = false;
+var gameLost = false;
+var difficultyLevel = 1;
+
 
 
 var dragEnabled = false;
