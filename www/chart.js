@@ -72,8 +72,8 @@ function randomizeHill() {
   rebuildHillTerrain();
 }
 
-function toggleGameMode() {
-  gameMode = !gameMode;
+function toggleGameMode(state) {
+  gameMode = state === undefined ? !gameMode : state;
 
   const btn = document.getElementById('btn-game-mode-toggle');
   const nerdBtn = document.getElementById('btn-nerd-mode-toggle');

@@ -12,13 +12,13 @@ server <- function(input, output, session) {
       max_x <- 3
       max_y <- 10
       interval <- max_x / n_pts
-      
+
       data.frame(
-        x = round(sapply(1:n_pts, function(i) runif(1, (i-1)*interval, i*interval)), 2),
+        x = round(sapply(1:n_pts, function(i) runif(1, (i - 1) * interval, i * interval)), 2),
         y = round(runif(n_pts, 0, max_y), 2)
       )
     }),
-    interp_points = data.frame(x = c(3.5)),
+    interp_points = data.frame(x = c(0)),
     calc_trigger = 1,
     interp_trigger = 1
   )
@@ -123,10 +123,10 @@ server <- function(input, output, session) {
     max_x_data <- max(pts$x)
     range_x <- max_x_data - min_x_data
     if (range_x == 0) range_x <- 1
-    
+
     # functional +- padding depending on data point spread
-    padding <- max(1, range_x * 0.05) 
-    
+    padding <- max(1, range_x * 0.05)
+
     min_x <- min_x_data - padding
     max_x <- max_x_data + padding
     xs <- seq(min_x, max_x, length.out = 800)
@@ -168,9 +168,7 @@ server <- function(input, output, session) {
   })
 
 
-
   # Ensure outputs render even when hidden in inactive tabs
-
 }
 
 shinyApp(ui = ui, server = server)

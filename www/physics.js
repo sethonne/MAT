@@ -2,7 +2,7 @@
 const airDensity = 1.225; // kg/m³
 const dragCoeff = 0.3; // Modern car Cd
 const frontalArea = 2.2; // m²
-const rollingResistCoeff = 0.04; // Boosted for noticeable effect
+const rollingResistCoeff = 0.66; // Boosted for noticeable effect
 
 /**
  * Evaluates the curve and its derivative at the car's current T position.

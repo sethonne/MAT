@@ -92,6 +92,7 @@ function toggleAutoCalc(btn) {
 }
 
 function switchTab(tabId) {
+  toggleGameMode(false)
   document.querySelectorAll('.tab-content').forEach(el => {
       el.classList.add('hidden');
       el.classList.remove('active');
