@@ -181,20 +181,19 @@ Shiny.addCustomMessageHandler('update_plot_data', function(msg) {
   passedPoints = new Array(controlPts.length).fill(false);
   fuel = 100;
   
-  // Spawn fuel cans at random control points
-  // Chance decreases as difficultyLevel increases
-  const baseChance = 0.35;
-  const currentChance = Math.max(0.1, baseChance - (difficultyLevel - 1) * 0.025);
-  
+  // Fuel cans are scarce by design — abundant cans + engine = unlimited drive,
+  // which trivializes the game. Keep the L1 min-1 floor as training wheels only.
+  const baseChance = 0.18;
+  const currentChance = Math.max(0.04, baseChance - (difficultyLevel - 1) * 0.04);
+
   fuelCans = controlPts.map(p => {
     if (Math.random() < currentChance) {
-      return { x: p.x, y: p.y + 1.2, collected: false }; // Spawn slightly above the point
+      return { x: p.x, y: p.y + 1.2, collected: false };
     }
     return null;
   }).filter(c => c !== null);
 
-  // Balanced: ensure at least one fuel can spawns
-  if (fuelCans.length === 0 && controlPts.length > 0) {
+  if (fuelCans.length === 0 && controlPts.length > 0 && difficultyLevel === 1) {
     const idx = Math.floor(Math.random() * controlPts.length);
     const p = controlPts[idx];
     fuelCans.push({ x: p.x, y: p.y + 1.2, collected: false });
@@ -877,7 +876,9 @@ function updateChart() {
       borderWidth: 2.5,
       pointRadius: 0,
       tension: 0.1,
-      fill: { value: -1000 }, 
+      // 'start' fills to the bottom of the y-scale; a hardcoded value can fall inside the visible
+      // range when the curve extrapolates wildly and auto-scales y.min below it, leaving the floor blank.
+      fill: 'start',
       backgroundColor: gameMode ? 'hsl(142 71% 45%)' : 'hsla(221.2, 83.2%, 53.3%, 0.08)'
     });
   }
@@ -1225,15 +1226,26 @@ function increaseDifficulty() {
     }
   }
 
-  // Complexity Balance: More points = Less frequency
-  // Difficulty Level increases both the total "challenge score"
-  hillNumPoints = Math.min(15, 7 + Math.floor((difficultyLevel - 1) / 0.8));
-  
-  // Frequency starts higher and is tempered by point density
-  const difficultyFactor = 1 + (difficultyLevel - 1) * 0.5;
-  hillFrequency = Math.max(1.2, Math.min(8, (difficultyFactor * 10) / hillNumPoints));
-  
-  hillAmplitude = Math.min(7, 3 + (difficultyLevel - 1) * 0.4);
+  const L = difficultyLevel;
+
+  // Engine climb limit lives around 18° (see enginePower in physics.js). Peak sine slope
+  // is ≈ amp*freq*2π/range_x ≈ amp*freq*0.628 for range_x≈10. L1 stays under that envelope
+  // (amp*freq ≲ 0.52) so it's drivable on engine alone; every later level pushes past it,
+  // forcing the player to coast downhill to bank momentum for the next climb.
+  if (L === 1) {
+    hillAmplitude = 0.6;
+    hillFrequency = 0.8;
+  } else {
+    hillFrequency = Math.min(2.5, 1.0 + Math.floor((L - 2) / 2) * 0.3);
+    hillAmplitude = Math.min(5.0, 1.0 + (L - 2) * 0.35);
+  }
+
+  // Derived from frequency to keep ≥4 samples per cycle; below that the Newton
+  // polynomial aliases the sine into flat blobs.
+  const SAMPLES_PER_CYCLE = 4;
+  hillNumPoints = Math.min(15, Math.max(6, Math.ceil(hillFrequency * SAMPLES_PER_CYCLE) + 2));
+
+  hillPhase = Math.random() * Math.PI * 2;
   
   const sync = (rangeId, valId, val, fixed = 1) => {
     const r = document.getElementById(rangeId);

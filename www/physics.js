@@ -48,7 +48,11 @@ function updatePhysics(dt) {
   
   // Physics constants relative to plot scale
   const physicsScale = (plotMaxX - plotMinX) / 10.0;
-  const enginePower = 0.001 * carSpeed * physicsScale;
+  // Engine vs. gravity ratio sets the climb limit. 0.00075 / 0.0008 → engine alone
+  // can sustain motion up to ~18° slope; anything steeper stalls and requires momentum
+  // banked from a previous downhill. Don't push enginePower close to gravityConst —
+  // that re-introduces "hold D wins everywhere" which is what L2+ is meant to forbid.
+  const enginePower = 0.00075 * carSpeed * physicsScale;
   const gravityConst = 0.0008 * carSpeed * physicsScale;
   
   const steps = dt / 16;
@@ -58,9 +62,10 @@ function updatePhysics(dt) {
   // 0. Fuel Logic
   const engineOn = engineDirection !== 0 && fuel > 0;
   
-  // Faster consumption when pressing keys
+  // Faster consumption when pressing keys — engine should be expensive enough that
+  // holding D through a whole level isn't viable; player has to coast.
   if (engineDirection !== 0 && fuel > 0) {
-    fuel -= 0.3 * steps; 
+    fuel -= 0.5 * steps;
   }
   // Passive consumption when moving
   if (Math.abs(v) > 0.001 && fuel > 0) {
@@ -76,7 +81,7 @@ function updatePhysics(dt) {
       // Simple collision check (distance < 0.3)
       if (Math.abs(dx) < 0.3) {
         can.collected = true;
-        fuel = Math.min(100, fuel + 30); // Refill 30% fuel
+        fuel = Math.min(100, fuel + 15);
       }
     }
   });
