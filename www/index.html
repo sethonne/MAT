@@ -346,9 +346,15 @@
                     <div class="p-6 space-y-4">
                       <div>
                         <div class="flex items-center justify-between mb-2">
-                          <label class="text-sm font-medium leading-none"
-                            >Data Points</label
-                          >
+                          <div>
+                            <label class="text-sm font-medium leading-none"
+                              >Data Points</label
+                            >
+                            <p class="text-[11px] text-muted-foreground mt-1">
+                              Paste Excel 1- or 2-column ranges directly into
+                              X/Y cells.
+                            </p>
+                          </div>
                           <div class="flex items-center space-x-2">
                             <label
                               class="text-[11px] font-semibold tracking-wide uppercase text-muted-foreground"
@@ -368,14 +374,31 @@
                           </div>
                         </div>
                         <div id="data-points-container"></div>
-                        <button
-                          id="btn-add-data"
-                          onclick="addDataPoint()"
-                          class="w-full mt-2 flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
-                        >
-                          <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i>
-                          Add Data Point
-                        </button>
+                        <div class="grid gap-2 mt-2">
+                          <button
+                            id="btn-paste-data"
+                            onclick="pasteDataPointsFromClipboard()"
+                            class="w-full inline-flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
+                          >
+                            <i
+                              data-lucide="clipboard"
+                              class="w-3.5 h-3.5 mr-1"
+                            ></i>
+                            Paste Data Points
+                          </button>
+                          <p class="text-[10px] text-muted-foreground px-1">
+                            Use the clipboard button to paste the first two
+                            columns from copied Excel rows.
+                          </p>
+                          <button
+                            id="btn-add-data"
+                            onclick="addDataPoint()"
+                            class="w-full inline-flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
+                          >
+                            <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i>
+                            Add Data Point
+                          </button>
+                        </div>
                       </div>
                       <button
                         id="calculate-btn"
@@ -544,7 +567,10 @@
                               <span class="tooltip-text">Toggle Game Mode</span>
                             </div>
 
-                            <div id="regen-tool-container" class="tooltip-container">
+                            <div
+                              id="regen-tool-container"
+                              class="tooltip-container"
+                            >
                               <button
                                 id="btn-regenerate-points"
                                 onclick="
@@ -555,7 +581,9 @@
                               >
                                 <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                               </button>
-                              <span class="tooltip-text">Regenerate Points</span>
+                              <span class="tooltip-text"
+                                >Regenerate Points</span
+                              >
                             </div>
 
                             <div class="tooltip-container">
@@ -838,7 +866,6 @@
                             ></canvas>
                           </div>
 
-
                           <!-- Game Indicators -->
                           <div
                             id="game-indicators"
@@ -849,18 +876,36 @@
                                 <div
                                   id="ind-left"
                                   class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center font-bold text-muted-foreground shadow-md transition-all cursor-pointer select-none active:scale-95"
-                                  onmousedown="engineKeys.left = true; updateEngineDirection();"
-                                  onmouseup="engineKeys.left = false; updateEngineDirection();"
-                                  onmouseleave="engineKeys.left = false; updateEngineDirection();"
+                                  onmousedown="
+                                    engineKeys.left = true;
+                                    updateEngineDirection();
+                                  "
+                                  onmouseup="
+                                    engineKeys.left = false;
+                                    updateEngineDirection();
+                                  "
+                                  onmouseleave="
+                                    engineKeys.left = false;
+                                    updateEngineDirection();
+                                  "
                                 >
                                   A
                                 </div>
                                 <div
                                   id="ind-right"
                                   class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center font-bold text-muted-foreground shadow-md transition-all cursor-pointer select-none active:scale-95"
-                                  onmousedown="engineKeys.right = true; updateEngineDirection();"
-                                  onmouseup="engineKeys.right = false; updateEngineDirection();"
-                                  onmouseleave="engineKeys.right = false; updateEngineDirection();"
+                                  onmousedown="
+                                    engineKeys.right = true;
+                                    updateEngineDirection();
+                                  "
+                                  onmouseup="
+                                    engineKeys.right = false;
+                                    updateEngineDirection();
+                                  "
+                                  onmouseleave="
+                                    engineKeys.right = false;
+                                    updateEngineDirection();
+                                  "
                                 >
                                   D
                                 </div>
@@ -923,10 +968,16 @@
                                   class="w-10 h-10"
                                 ></i>
                               </div>
-                              <h2 id="status-title" class="text-2xl font-bold mb-2">
+                              <h2
+                                id="status-title"
+                                class="text-2xl font-bold mb-2"
+                              >
                                 You Win!
                               </h2>
-                              <p id="status-desc" class="text-muted-foreground mb-6">
+                              <p
+                                id="status-desc"
+                                class="text-muted-foreground mb-6"
+                              >
                                 Difficulty Level 1 Completed
                               </p>
                               <button
