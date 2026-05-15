@@ -139,6 +139,83 @@ function applyClipboardRows(rows) {
   return hasChanges;
 }
 
+function parseCsvText(text) {
+  return text
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "")
+    .map((line) => {
+      if (line.includes(",")) {
+        return line.split(",").map((cell) => cell.trim());
+      }
+      if (line.includes(";")) {
+        return line.split(";").map((cell) => cell.trim());
+      }
+      if (line.includes("\t")) {
+        return line.split(/\t/).map((cell) => cell.trim());
+      }
+      return line.split(/\s+/).map((cell) => cell.trim());
+    });
+}
+
+function resetCsvUploadInput() {
+  const input = document.getElementById("csv-upload-input");
+  if (input) input.value = null;
+}
+
+function applyCsvRows(rows) {
+  const parsedRows = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const values = rows[i];
+    if (values.length < 2) continue;
+    const xNum = parseFloat(values[0]);
+    const yNum = parseFloat(values[1]);
+    if (isNaN(xNum) || isNaN(yNum)) continue;
+    parsedRows.push({ x: clamp(xNum), y: clamp(yNum) });
+    if (parsedRows.length >= MAX_POINTS) break;
+  }
+
+  if (parsedRows.length === 0) {
+    return false;
+  }
+
+  dataPoints.length = 0;
+  parsedRows.forEach((row) => dataPoints.push(row));
+  renderDataPoints();
+  return true;
+}
+
+function handleCsvUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const text = e.target.result;
+    const rows = parseCsvText(text);
+    if (rows.length === 0) {
+      alert("No valid CSV rows found.");
+      resetCsvUploadInput();
+      return;
+    }
+
+    if (!applyCsvRows(rows)) {
+      alert("No valid numeric X/Y values found in the uploaded CSV.");
+      resetCsvUploadInput();
+      return;
+    }
+
+    resetCsvUploadInput();
+  };
+  reader.onerror = function () {
+    alert("Unable to read the selected file.");
+    resetCsvUploadInput();
+  };
+  reader.readAsText(file);
+}
+
 function showClipboardPasteModal() {
   if (document.getElementById("clipboard-paste-modal")) return;
 
@@ -470,4 +547,250 @@ function removeInterpPoint(idx) {
     renderInterpPoints();
     Shiny.setInputValue("client_interp_x", interpX, { priority: "event" });
   }
+}
+
+function parseInterpClipboardData(clipboardText) {
+  return clipboardText
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "")
+    .map((line) => {
+      const cells = line.includes("\t") ? line.split(/\t/) : line.split(/\s+/);
+      return cells.map((cell) => cell.trim()).filter((cell) => cell !== "");
+    })
+    .filter((row) => row.length > 0);
+}
+
+function applyInterpClipboardRows(rows) {
+  let hasChanges = false;
+  const maxRows = Math.min(rows.length, MAX_INTERP);
+
+  for (let rowIndex = 0; rowIndex < maxRows; rowIndex++) {
+    const values = rows[rowIndex];
+    if (values.length === 0) continue;
+
+    while (rowIndex >= interpX.length && interpX.length < MAX_INTERP) {
+      interpX.push(0);
+    }
+    if (rowIndex >= interpX.length) break;
+
+    const xNum = parseFloat(values[0]);
+    if (!isNaN(xNum)) {
+      interpX[rowIndex] = clamp(xNum);
+      hasChanges = true;
+    }
+  }
+
+  if (hasChanges) {
+    renderInterpPoints();
+  }
+  return hasChanges;
+}
+
+async function pasteInterpXFromClipboard() {
+  if (
+    navigator.clipboard &&
+    typeof navigator.clipboard.readText === "function"
+  ) {
+    try {
+      const rawText = await navigator.clipboard.readText();
+      if (rawText && rawText.trim()) {
+        const rows = parseInterpClipboardData(rawText);
+        if (rows.length > 0 && applyInterpClipboardRows(rows)) {
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Clipboard read failed, falling back to manual paste.", err);
+    }
+  }
+  showInterpClipboardPasteModal();
+}
+
+function showInterpClipboardPasteModal() {
+  if (document.getElementById("interp-clipboard-paste-modal")) return;
+
+  const overlay = document.createElement("div");
+  overlay.id = "interp-clipboard-paste-modal";
+  overlay.style.position = "fixed";
+  overlay.style.inset = "0";
+  overlay.style.background = "rgba(0,0,0,0.35)";
+  overlay.style.zIndex = "9999";
+  overlay.style.display = "flex";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.padding = "16px";
+
+  const card = document.createElement("div");
+  card.style.width = "min(560px,100%)";
+  card.style.background = "white";
+  card.style.borderRadius = "16px";
+  card.style.boxShadow = "0 20px 50px rgba(0,0,0,0.15)";
+  card.style.padding = "20px";
+  card.style.display = "flex";
+  card.style.flexDirection = "column";
+  card.style.gap = "12px";
+
+  const title = document.createElement("h2");
+  title.textContent = "Paste Eval X Values";
+  title.style.margin = "0";
+  title.style.fontSize = "1rem";
+  title.style.fontWeight = "700";
+
+  const message = document.createElement("p");
+  message.textContent =
+    "Paste a single column of X values here, then click Apply. Only the first value from each row will be used.";
+  message.style.margin = "0";
+  message.style.fontSize = "0.9rem";
+  message.style.color = "#4a5568";
+
+  const textarea = document.createElement("textarea");
+  textarea.style.width = "100%";
+  textarea.style.minHeight = "160px";
+  textarea.style.padding = "12px";
+  textarea.style.fontSize = "0.95rem";
+  textarea.style.lineHeight = "1.4";
+  textarea.style.border = "1px solid #cbd5e1";
+  textarea.style.borderRadius = "8px";
+  textarea.style.resize = "vertical";
+  textarea.placeholder = "Paste X values here...";
+  textarea.autofocus = true;
+
+  const actions = document.createElement("div");
+  actions.style.display = "flex";
+  actions.style.flexWrap = "wrap";
+  actions.style.gap = "10px";
+
+  const applyButton = document.createElement("button");
+  applyButton.type = "button";
+  applyButton.textContent = "Apply";
+  applyButton.style.padding = "10px 16px";
+  applyButton.style.border = "none";
+  applyButton.style.background = "#2563eb";
+  applyButton.style.color = "white";
+  applyButton.style.borderRadius = "8px";
+  applyButton.style.cursor = "pointer";
+  applyButton.onclick = function () {
+    const rows = parseInterpClipboardData(textarea.value);
+    if (rows.length === 0) {
+      alert("No valid values found.");
+      return;
+    }
+    if (!applyInterpClipboardRows(rows)) {
+      alert("No numeric values found in the pasted data.");
+      return;
+    }
+    closeInterpClipboardPasteModal();
+  };
+
+  const cancelButton = document.createElement("button");
+  cancelButton.type = "button";
+  cancelButton.textContent = "Cancel";
+  cancelButton.style.padding = "10px 16px";
+  cancelButton.style.border = "1px solid #cbd5e1";
+  cancelButton.style.background = "white";
+  cancelButton.style.color = "#111827";
+  cancelButton.style.borderRadius = "8px";
+  cancelButton.style.cursor = "pointer";
+  cancelButton.onclick = closeInterpClipboardPasteModal;
+
+  actions.appendChild(applyButton);
+  actions.appendChild(cancelButton);
+
+  card.appendChild(title);
+  card.appendChild(message);
+  card.appendChild(textarea);
+  card.appendChild(actions);
+  overlay.appendChild(card);
+  overlay.addEventListener("click", function (event) {
+    if (event.target === overlay) closeInterpClipboardPasteModal();
+  });
+
+  document.body.appendChild(overlay);
+  textarea.focus();
+}
+
+function closeInterpClipboardPasteModal() {
+  const existing = document.getElementById("interp-clipboard-paste-modal");
+  if (existing) {
+    existing.remove();
+  }
+}
+
+function parseInterpCsvText(text) {
+  return text
+    .trim()
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line !== "")
+    .map((line) => {
+      if (line.includes(",")) {
+        return line.split(",").map((cell) => cell.trim());
+      }
+      if (line.includes(";")) {
+        return line.split(";").map((cell) => cell.trim());
+      }
+      if (line.includes("\t")) {
+        return line.split(/\t/).map((cell) => cell.trim());
+      }
+      return line.split(/\s+/).map((cell) => cell.trim());
+    });
+}
+
+function resetInterpCsvUploadInput() {
+  const input = document.getElementById("csv-upload-interp-input");
+  if (input) input.value = null;
+}
+
+function applyInterpCsvRows(rows) {
+  const parsedValues = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const values = rows[i];
+    if (values.length === 0) continue;
+    const xNum = parseFloat(values[0]);
+    if (isNaN(xNum)) continue;
+    parsedValues.push(clamp(xNum));
+    if (parsedValues.length >= MAX_INTERP) break;
+  }
+
+  if (parsedValues.length === 0) {
+    return false;
+  }
+
+  interpX.length = 0;
+  parsedValues.forEach((val) => interpX.push(val));
+  renderInterpPoints();
+  Shiny.setInputValue("client_interp_x", interpX, { priority: "event" });
+  return true;
+}
+
+function handleInterpCsvUpload(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const text = e.target.result;
+    const rows = parseInterpCsvText(text);
+    if (rows.length === 0) {
+      alert("No valid CSV rows found.");
+      resetInterpCsvUploadInput();
+      return;
+    }
+
+    if (!applyInterpCsvRows(rows)) {
+      alert("No valid numeric values found in the uploaded CSV.");
+      resetInterpCsvUploadInput();
+      return;
+    }
+
+    resetInterpCsvUploadInput();
+  };
+  reader.onerror = function () {
+    alert("Unable to read the selected file.");
+    resetInterpCsvUploadInput();
+  };
+  reader.readAsText(file);
 }
