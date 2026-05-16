@@ -137,7 +137,8 @@ function simplifiedLatex(x, coeffs) {
   const poly   = expandNewtonPoly(x, coeffs);
 
   const terms = [];
-  for (let d = 0; d < poly.length; d++) {
+  // Iterate from highest degree to lowest (descending order)
+  for (let d = poly.length - 1; d >= 0; d--) {
     const val = poly[d];
     if (Math.abs(val) < 1e-9) continue;
     const abs    = Math.abs(val);

@@ -48,33 +48,7 @@ poly_degree <- function(dd_result) length(dd_result$coeffs) - 1L
 
 # Newton-form LaTeX using actual degree label P_{k}(x) where k = n_points - 1
 newton_latex <- function(dd_result) {
-  coeffs <- dd_result$coeffs
-  x      <- dd_result$x
-  n      <- length(coeffs)
-  deg    <- n - 1L
-  if (n == 0) return("P_{0}(x) = 0")
-
-  label <- paste0("P_{", deg, "}(x)")
-  terms <- paste0(round(coeffs[1], 4))
-
-  if (n > 1) {
-    for (i in 2:n) {
-      if (abs(coeffs[i]) > 1e-10) {
-        val       <- coeffs[i]
-        sign_str  <- if (val >= 0) " + " else " - "
-        abs_val   <- abs(val)
-        coeff_str <- if (abs(abs_val - 1) < 1e-10) "" else sprintf("%.4g", abs_val)
-        factors   <- vapply(seq_len(i - 1), function(j) {
-          xj <- x[j]
-          if (abs(xj) < 1e-10) "x"
-          else if (xj > 0)     sprintf("(x - %g)", xj)
-          else                 sprintf("(x + %g)", abs(xj))
-        }, character(1))
-        terms <- paste0(terms, sign_str, coeff_str, paste0(factors, collapse = ""))
-      }
-    }
-  }
-  paste0(label, " = ", terms)
+  newton_simplified_latex(dd_result)
 }
 
 # Expand Newton form to flat polynomial coefficients (element d+1 = coeff of x^d)
@@ -110,29 +84,56 @@ newton_simplified_latex <- function(dd_result) {
   deg   <- n - 1L
   label <- paste0("P_{", deg, "}(x)")
 
-  if (all(abs(p) < 1e-10)) return(paste0(label, " = 0"))
+  # Remove near-zero coefficients
+  p[abs(p) < 1e-10] <- 0
 
-  term_list <- list()
-  for (d in 0:(n - 1)) {
+  # If all coefficients are zero
+  if (all(p == 0)) {
+    return(paste0(label, " = 0"))
+  }
+
+  # Highest nonzero degree
+  max_deg <- max(which(p != 0)) - 1L
+
+  terms <- character()
+
+  # Build polynomial in descending powers
+  for (d in seq(max_deg, 0)) {
     val <- p[d + 1]
-    if (abs(val) < 1e-10) next
-    abs_val   <- abs(val)
-    coeff_str <- sprintf("%.4g", abs_val)
-    is_one    <- abs(abs_val - 1) < 1e-10
-    term <- if (d == 0)      coeff_str
-            else if (d == 1) if (is_one) "x" else paste0(coeff_str, "x")
-            else if (is_one) paste0("x^{", d, "}")
-            else             paste0(coeff_str, "x^{", d, "}")
-    term_list <- c(term_list, list(list(sign = if (val >= 0) "+" else "-", term = term)))
+    if (val == 0) next
+
+    abs_val <- abs(val)
+    is_one  <- abs(abs_val - 1) < 1e-10
+
+    # Format coefficient
+    coeff_str <- sprintf("%.4f", abs_val)
+    coeff_str <- sub("\\.?0+$", "", coeff_str)
+
+    # Build term
+    term <- if (d == 0) {
+      coeff_str
+    } else if (d == 1) {
+      if (is_one) "x" else paste0(coeff_str, "x")
+    } else {
+      if (is_one) paste0("x^{", d, "}")
+      else paste0(coeff_str, "x^{", d, "}")
+    }
+
+    # Add sign
+    if (length(terms) == 0) {
+      if (val < 0) {
+        terms <- c(terms, paste0("-", term))
+      } else {
+        terms <- c(terms, term)
+      }
+    } else {
+      if (val < 0) {
+        terms <- c(terms, paste0("- ", term))
+      } else {
+        terms <- c(terms, paste0("+ ", term))
+      }
+    }
   }
 
-  if (length(term_list) == 0) return(paste0(label, " = 0"))
-
-  latex <- paste0(label, " = ")
-  for (i in seq_along(term_list)) {
-    t <- term_list[[i]]
-    if (i == 1) latex <- paste0(latex, if (t$sign == "-") "-" else "", t$term)
-    else        latex <- paste0(latex, " ", t$sign, " ", t$term)
-  }
-  latex
+  paste0(label, " = ", paste(terms, collapse = " "))
 }
