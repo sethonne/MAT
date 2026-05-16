@@ -345,7 +345,7 @@ function renderStepsFromData(data) {
   );
 
   // Cache simplified LaTeX for clipboard before building HTML
-  _currentSimplifiedLatex = simplifiedLatex(x, coeffs);
+  window._currentSimplifiedLatex = simplifiedLatex(x, coeffs);
 
   // Render unified DD table to both Steps tab and Table tab (req 4 + 5 + 6)
   renderSummaryTable(x, table);

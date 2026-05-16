@@ -19,7 +19,7 @@ $(document).on("shiny:value", function (event) {
   }, 10);
 });
 
-Shiny.addCustomMessageHandler("update_equation_text", function (eqString) {
+function updateEquationDisplay(eqString) {
   if (!window.MathJax) return;
 
   const containers = document.querySelectorAll(".mj-container");
@@ -34,7 +34,20 @@ Shiny.addCustomMessageHandler("update_equation_text", function (eqString) {
       let visible = b1.classList.contains("mj-hidden") ? b2 : b1;
       let hidden = b1.classList.contains("mj-hidden") ? b1 : b2;
 
-      hidden.innerHTML = eqString;
+      // Use simplified LaTeX if available and this is a designated simplified container
+      // OR if it's the plot tab (as requested by user)
+      let textToUse = eqString || "";
+      if (
+        (b1.id.includes("plot") || b1.id.includes("sidebar")) &&
+        window._currentSimplifiedLatex
+      ) {
+        textToUse = "\\[" + window._currentSimplifiedLatex + "\\]";
+      }
+
+      // If we don't have anything yet, don't clear the buffer with empty text if eqString is missing
+      if (!textToUse && !eqString) return;
+
+      hidden.innerHTML = textToUse;
       hiddenBuffers.push(hidden);
       visibleBuffers.push(visible);
     }
@@ -54,6 +67,11 @@ Shiny.addCustomMessageHandler("update_equation_text", function (eqString) {
       })
       .catch((err) => console.error("MathJax double buffer error: ", err));
   }
+}
+
+Shiny.addCustomMessageHandler("update_equation_text", function (eqString) {
+  window._lastNewtonLatex = eqString; // Cache the Newton form
+  updateEquationDisplay(eqString);
 });
 
 // Settings Dropdown (click toggle)
