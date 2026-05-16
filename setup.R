@@ -1,6 +1,10 @@
 # Quick Setup & Run Script for MAT
 # This script installs dependencies and runs the app directly from GitHub
 
+# To quickly run
+# on windows press: `Ctrl + Shift + S`
+# on mac press    : `Cmd + Shift + S`
+
 # 1. Install required packages if missing
 required_packages <- c("shiny", "DT", "htmltools")
 new_packages <- required_packages[!(required_packages %in% installed.packages()[, "Package"])]
