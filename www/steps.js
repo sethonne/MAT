@@ -1,36 +1,28 @@
-// Step-by-step divided difference rendering
-console.log('[Steps] steps.js script loaded and executing');
+// steps.js — Step-by-step divided difference rendering
 
-// Constants and state
-const STEPS_COLLAPSE_THRESHOLD = 5; // Collapse middle orders if more than this
+const STEPS_COLLAPSE_THRESHOLD = 5;
 
-var _stepsData     = null;   // Latest data from Shiny
-var _stepsExpanded = false;  // Show all collapsed orders
-var _stepsMode     = 'dd';   // 'dd' or 'matrix'
-
-// Simplified polynomial LaTeX
+var _stepsData              = null;
+var _stepsExpanded          = false;
 var _currentSimplifiedLatex = '';
 
-// Number formatting
+// ── Formatting ────────────────────────────────────────────────────────────────
 
-function roundVal(v) {
-  return Number(Number(v).toFixed(4));
-}
+function roundVal(v) { return Number(Number(v).toFixed(4)); }
 
+// Guard: exact zero must never render as "0..." due to floating-point noise
 function fmtNum(v) {
-  // Round to 4 decimals and remove trailing zeros
+  if (Math.abs(v) < 1e-10) return '0';
   return String(parseFloat(roundVal(v).toFixed(4)));
 }
 
-// Wrap negative numbers in parentheses
 function fmtParen(v) {
   const r = roundVal(v);
   return r < 0 ? '(' + r + ')' : String(r);
 }
 
-// LaTeX labels
+// ── Label helpers ─────────────────────────────────────────────────────────────
 
-// Build f[x_i, ..., x_j]
 function ddLabel(startIdx, endIdx) {
   const count = endIdx - startIdx + 1;
   if (count === 1) return 'f[x_{' + startIdx + '}]';
@@ -46,7 +38,12 @@ function ddLabel(startIdx, endIdx) {
   return 'f[' + parts.join(', ') + ']';
 }
 
-// Step cards
+function ordinalSuffix(n) {
+  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+// ── Card builder ──────────────────────────────────────────────────────────────
 
 function buildStepCard(title, subtitle, innerHtml, icon) {
   return '<div class="rounded-lg border bg-card p-4 mb-3 shadow-sm">' +
@@ -54,14 +51,11 @@ function buildStepCard(title, subtitle, innerHtml, icon) {
     '<i data-lucide="' + icon + '" class="w-4 h-4 text-primary shrink-0"></i>' +
     '<h4 class="font-semibold text-sm text-foreground">' + title +
     '<span class="font-normal text-muted-foreground ml-1.5">— ' + subtitle + '</span></h4>' +
-    '</div>' +
-    '<div class="space-y-1">' + innerHtml + '</div>' +
-    '</div>';
+    '</div><div class="space-y-1">' + innerHtml + '</div></div>';
 }
 
-// Divided difference steps
+// ── DD step renderers ─────────────────────────────────────────────────────────
 
-// Render order 0 values
 function renderOrderZero(x, table) {
   const n = x.length;
   let items = '';
@@ -73,640 +67,325 @@ function renderOrderZero(x, table) {
   return buildStepCard('Order 0', 'Function Values', items, 'book-open');
 }
 
-// Render one divided-difference order
 function renderOrderK(ord, x, table, n) {
-  const formulaBanner =
+  // Recursive formula reminder with i ≠ j condition
+  const banner =
     '<div class="mb-3 rounded-md bg-muted/60 border px-4 py-2 overflow-x-auto overflow-y-hidden mj-container">' +
-    '\\[f[x_i, \\ldots, x_j] = ' +
-    '\\frac{f[x_{i+1}, \\ldots, x_j] - f[x_i, \\ldots, x_{j-1}]}{x_j - x_i}, ' +
-    '\\quad i \\neq j\\]' +
+    '\\[f[x_i,\\ldots,x_j]=\\frac{f[x_{i+1},\\ldots,x_j]-f[x_i,\\ldots,x_{j-1}]}{x_j-x_i},\\quad i\\neq j\\]' +
     '</div>';
 
-  let items = formulaBanner;
-
+  let items = banner;
   for (let i = ord; i < n; i++) {
-    const startPt = i - ord;
-    const endPt   = i;
-
-    const lhs       = ddLabel(startPt, endPt);
-    const numLabel1 = ddLabel(startPt + 1, endPt);
-    const numLabel2 = ddLabel(startPt, endPt - 1);
-
-    const numVal1  = table[i][ord - 1];
-    const numVal2  = table[i - 1][ord - 1];
-    const denomVal1 = x[endPt];
-    const denomVal2 = x[startPt];
-    const result   = table[i][ord];
-
-    const latex = lhs +
-      ' = \\frac{' + numLabel1 + ' - ' + numLabel2 + '}{x_{' + endPt + '} - x_{' + startPt + '}}' +
-      ' = \\frac{' + fmtParen(numVal1) + ' - ' + fmtParen(numVal2) + '}{' +
-      fmtParen(denomVal1) + ' - ' + fmtParen(denomVal2) + '}' +
-      ' = ' + fmtNum(result);
-
-    items += '<div class="pl-2 py-1.5 overflow-x-auto overflow-y-hidden mj-container">' +
-      '\\[' + latex + '\\]' +
-      '</div>';
+    const s = i - ord, e = i;
+    const latex = ddLabel(s, e) +
+      ' = \\frac{' + ddLabel(s + 1, e) + ' - ' + ddLabel(s, e - 1) + '}{x_{' + e + '} - x_{' + s + '}}' +
+      ' = \\frac{' + fmtParen(table[i][ord - 1]) + ' - ' + fmtParen(table[i - 1][ord - 1]) + '}{' +
+      fmtParen(x[e]) + ' - ' + fmtParen(x[s]) + '}' +
+      ' = ' + fmtNum(table[i][ord]);
+    items += '<div class="pl-2 py-1.5 overflow-x-auto overflow-y-hidden mj-container">\\[' + latex + '\\]</div>';
   }
 
   const subtitle = ord === 1 ? 'First Divided Differences'  :
                    ord === 2 ? 'Second Divided Differences' :
                    ord === 3 ? 'Third Divided Differences'  :
                    ordinalSuffix(ord) + ' Divided Differences';
-
   return buildStepCard('Order ' + ord, subtitle, items, 'git-branch');
 }
 
-// Convert to ordinal text
-function ordinalSuffix(n) {
-  const s = ['th', 'st', 'nd', 'rd'];
-  const v = n % 100;
-  return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
-// Render collapsed placeholder
 function renderCollapsedOrders(fromOrd, toOrd) {
   const count = toOrd - fromOrd + 1;
-  const content =
-    '<div class="text-center text-muted-foreground py-4">' +
-    '<p class="text-sm font-medium mb-1">... ' + count + ' intermediate order' +
-    (count > 1 ? 's' : '') + ' hidden ...</p>' +
-    '<p class="text-xs">Orders ' + fromOrd + ' through ' + toOrd + '</p>' +
-    '</div>';
-
   return '<div id="steps-collapsed-placeholder" ' +
     'class="rounded-lg border border-dashed bg-muted/30 p-2 mb-3 cursor-pointer hover:bg-muted/50 transition-colors" ' +
     'onclick="expandCollapsedSteps()">' +
-    content +
+    '<div class="text-center text-muted-foreground py-4">' +
+    '<p class="text-sm font-medium mb-1">... ' + count + ' intermediate order' + (count > 1 ? 's' : '') + ' hidden ...</p>' +
+    '<p class="text-xs">Orders ' + fromOrd + ' through ' + toOrd + '</p></div>' +
     '<div class="flex items-center justify-center gap-1 text-xs text-primary font-medium mt-1">' +
-    '<i data-lucide="chevrons-down" class="w-3.5 h-3.5"></i> Expand all steps</div>' +
-    '</div>';
+    '<i data-lucide="chevrons-down" class="w-3.5 h-3.5"></i> Expand all steps</div></div>';
 }
 
-// Simplified final polynomial renderer
+// ── Polynomial expansion ──────────────────────────────────────────────────────
 
-// Expand Newton form into standard polynomial coefficients.
+// Multiply out Newton basis terms into flat coefficient array (index = degree)
 function expandNewtonPoly(x, coeffs) {
   const n = coeffs.length;
-  // Coefficients of x^d
   const poly = new Array(n).fill(0);
   poly[0] = coeffs[0];
-
-  // Running product term
-  let prodPoly = new Array(n).fill(0);
-  prodPoly[0] = 1;
+  let prod = new Array(n).fill(0);
+  prod[0] = 1;
 
   for (let k = 1; k < n; k++) {
-    // Multiply by (x - x[k - 1])
-    const newProd = new Array(n).fill(0);
+    const next = new Array(n).fill(0);
     const xk = x[k - 1];
     for (let d = 0; d < n - 1; d++) {
-      if (prodPoly[d] === 0) continue;
-      newProd[d + 1] += prodPoly[d];
-      newProd[d]     -= xk * prodPoly[d];
+      if (prod[d] === 0) continue;
+      next[d + 1] += prod[d];
+      next[d]     -= xk * prod[d];
     }
-    prodPoly = newProd;
-
-    // Add coeffs[k] * prodPoly
-    for (let d = 0; d < n; d++) {
-      poly[d] += coeffs[k] * prodPoly[d];
-    }
+    prod = next;
+    for (let d = 0; d < n; d++) poly[d] += coeffs[k] * prod[d];
   }
 
-  // Remove tiny values
-  for (let d = 0; d < n; d++) {
-    if (Math.abs(poly[d]) < 1e-9) poly[d] = 0;
-  }
+  for (let d = 0; d < n; d++) if (Math.abs(poly[d]) < 1e-9) poly[d] = 0;
   return poly;
 }
 
-// Build simplified polynomial LaTeX.
+// Build simplified LaTeX using actual degree label P_{k}(x)
 function simplifiedLatex(x, coeffs) {
-  const poly = expandNewtonPoly(x, coeffs);
-  const n    = poly.length;
+  const degree = coeffs.length - 1;
+  const label  = 'P_{' + degree + '}(x)';
+  const poly   = expandNewtonPoly(x, coeffs);
 
   const terms = [];
-  for (let deg = 0; deg < n; deg++) {
-    const val = poly[deg];
+  for (let d = 0; d < poly.length; d++) {
+    const val = poly[d];
     if (Math.abs(val) < 1e-9) continue;
-
-    const absVal    = Math.abs(val);
-    const absStr    = parseFloat(absVal.toFixed(4)).toString();
-    const isOne     = Math.abs(absVal - 1) < 1e-9;
-    const sign      = val >= 0 ? '+' : '-';
-
+    const abs    = Math.abs(val);
+    const absStr = parseFloat(abs.toFixed(4)).toString();
+    const isOne  = Math.abs(abs - 1) < 1e-9;
     let term;
-    if (deg === 0) {
-      term = absStr;
-    } else if (deg === 1) {
-      term = isOne ? 'x' : absStr + 'x';
-    } else {
-      term = isOne ? 'x^{' + deg + '}' : absStr + 'x^{' + deg + '}';
-    }
-    terms.push({ sign, term });
+    if (d === 0)      term = absStr;
+    else if (d === 1) term = isOne ? 'x' : absStr + 'x';
+    else              term = isOne ? 'x^{' + d + '}' : absStr + 'x^{' + d + '}';
+    terms.push({ sign: val >= 0 ? '+' : '-', term });
   }
 
-  if (terms.length === 0) return 'P(x) = 0';
+  if (terms.length === 0) return label + ' = 0';
 
-  let latex = 'P(x) = ';
+  let latex = label + ' = ';
   terms.forEach((t, i) => {
-    if (i === 0) {
-      latex += (t.sign === '-' ? '-' : '') + t.term;
-    } else {
-      latex += ' ' + t.sign + ' ' + t.term;
-    }
+    if (i === 0) latex += (t.sign === '-' ? '-' : '') + t.term;
+    else         latex += ' ' + t.sign + ' ' + t.term;
   });
   return latex;
 }
 
-// Render the final polynomial card.
+// ── Final polynomial card ─────────────────────────────────────────────────────
+
 function renderFinalPolynomial(x, coeffs) {
-  const n = coeffs.length;
+  const n      = coeffs.length;
+  const degree = n - 1;
+  const Plabel = 'P_{' + degree + '}(x)';
   if (n === 0) return '';
 
-  // Build Newton form
+  // Newton form string
   let newtonTerms = fmtNum(coeffs[0]);
   for (let k = 1; k < n; k++) {
     if (Math.abs(coeffs[k]) < 1e-10) continue;
-    const val     = coeffs[k];
-    const sign    = val >= 0 ? ' + ' : ' - ';
-    const absVal  = Math.abs(val);
-    const isOne   = Math.abs(absVal - 1) < 1e-10;
-    const cStr    = isOne ? '' : fmtNum(absVal);
-
+    const val   = coeffs[k];
+    const abs   = Math.abs(val);
+    const isOne = Math.abs(abs - 1) < 1e-10;
+    const cStr  = isOne ? '' : fmtNum(abs);
+    const sign  = val >= 0 ? ' + ' : ' - ';
     const factors = [];
     for (let j = 0; j < k; j++) {
       const xj = x[j];
-      if (Math.abs(xj) < 1e-10)     factors.push('x');
-      else if (xj > 0)               factors.push('(x - ' + fmtNum(xj) + ')');
-      else                           factors.push('(x + ' + fmtNum(Math.abs(xj)) + ')');
+      if (Math.abs(xj) < 1e-10) factors.push('x');
+      else if (xj > 0)          factors.push('(x - ' + fmtNum(xj) + ')');
+      else                      factors.push('(x + ' + fmtNum(Math.abs(xj)) + ')');
     }
     newtonTerms += sign + cStr + factors.join('');
   }
 
-  // Save simplified form
-  const simpLatex = simplifiedLatex(x, coeffs);
-  _currentSimplifiedLatex = simpLatex;
+  const simp = simplifiedLatex(x, coeffs);
+  _currentSimplifiedLatex = simp;
 
   const content =
-    // Newton form
     '<div class="mb-2">' +
     '<p class="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">Newton Form</p>' +
     '<div class="pl-2 py-2 overflow-x-auto overflow-y-hidden mj-container">' +
-    '\\[P(x) = ' + newtonTerms + '\\]' +
-    '</div>' +
-    '</div>' +
-    // Simplified form
+    '\\[' + Plabel + ' = ' + newtonTerms + '\\]</div></div>' +
     '<div class="rounded-md bg-primary/5 border border-primary/20 p-3">' +
     '<p class="text-xs font-medium text-primary mb-1 uppercase tracking-wide">Simplified Form</p>' +
-    '<div class="pl-2 py-2 overflow-x-auto overflow-y-hidden mj-container">' +
-    '\\[' + simpLatex + '\\]' +
-    '</div>' +
-    '</div>';
+    '<div class="pl-2 py-2 overflow-x-auto overflow-y-hidden mj-container">\\[' + simp + '\\]</div></div>';
 
   return buildStepCard('Result', 'Newton Interpolating Polynomial', content, 'sigma');
 }
 
-// Summary table
+// ── Unified DD table ──────────────────────────────────────────────────────────
 
+// Renders to both #steps-table-container (Steps tab) and #summary-table-container (Table tab)
 function renderSummaryTable(x, table) {
-  const container = document.getElementById('summary-table-container');
-  if (!container) return;
-
   const n       = x.length;
   const showAll = _stepsExpanded || (n <= 5);
+  const cols    = showAll
+    ? Array.from({ length: n }, (_, i) => i)
+    : [0, 1, '...', n - 2, n - 1];
 
-  let headerHtml   = '<th class="px-3 py-2 border-r font-semibold text-center w-16">X</th>';
-  let columnsToShow = [];
-
-  if (showAll) {
-    for (let j = 0; j < n; j++) columnsToShow.push(j);
-  } else {
-    columnsToShow = [0, 1, '...', n - 2, n - 1];
-  }
-
-  columnsToShow.forEach(col => {
+  // Column headers
+  let headerHtml = '<th class="px-3 py-2 border-r font-semibold text-center text-xs uppercase text-muted-foreground w-16">X</th>';
+  cols.forEach(col => {
     if (col === '...') {
-      headerHtml += '<th class="px-3 py-2 border-r font-semibold text-center text-muted-foreground italic w-12">...</th>';
+      headerHtml += '<th class="px-3 py-2 border-r text-center text-muted-foreground italic w-10">···</th>';
     } else {
-      headerHtml += '<th class="px-3 py-2 border-r font-semibold text-center">' +
-        (col === 0 ? 'f(x)' : 'Order ' + col) + '</th>';
+      const label = col === 0 ? 'f(x<sub>i</sub>)' : ordinalSuffix(col) + ' Order';
+      headerHtml += '<th class="px-3 py-2 border-r font-semibold text-center text-xs uppercase text-muted-foreground">' + label + '</th>';
     }
   });
 
+  // Body rows — diagonal cells (i === col) are Newton coefficients: highlight prominently
   let bodyHtml = '';
   for (let i = 0; i < n; i++) {
-    bodyHtml += '<tr class="hover:bg-muted/30 transition-colors">';
-    bodyHtml += '<td class="px-3 py-2 border-r text-center font-mono text-muted-foreground bg-muted/10">' +
-      fmtNum(x[i]) + '</td>';
-
-    columnsToShow.forEach(col => {
+    bodyHtml += '<tr class="hover:bg-muted/20 transition-colors">';
+    bodyHtml += '<td class="px-3 py-2 border-r text-center font-mono text-xs bg-muted/10 text-muted-foreground">' + fmtNum(x[i]) + '</td>';
+    cols.forEach(col => {
       if (col === '...') {
-        bodyHtml += '<td class="px-3 py-2 border-r text-center text-muted-foreground/30 italic">...</td>';
+        bodyHtml += '<td class="px-3 py-2 border-r text-center text-muted-foreground/25 text-xs">···</td>';
+        return;
+      }
+      const val    = table[i][col];
+      const isDiag = (i === col); // Newton coefficient — on the diagonal
+      if (isDiag) {
+        const v = val != null ? fmtNum(val) : '—';
+        // Bold, primary colour, tinted background, and inset ring to make coefficients stand out
+        bodyHtml += '<td class="px-3 py-2 border-r text-center font-mono text-xs font-bold text-primary bg-primary/10 ring-1 ring-inset ring-primary/30">' + v + '</td>';
+      } else if (val != null) {
+        bodyHtml += '<td class="px-3 py-2 border-r text-center font-mono text-xs">' + fmtNum(val) + '</td>';
       } else {
-        const val      = table[i][col];
-        const valStr   = val != null ? fmtNum(val) : '-';
-        const isDiag   = (i === col);
-        const cellCls  = isDiag ? 'text-primary font-bold' : '';
-        bodyHtml += '<td class="px-3 py-2 border-r text-center font-mono ' + cellCls + '">' + valStr + '</td>';
+        bodyHtml += '<td class="px-3 py-2 border-r text-center text-muted-foreground/25 text-xs">—</td>';
       }
     });
     bodyHtml += '</tr>';
   }
 
-  let tableHtml =
-    '<div class="rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden">' +
+  const legend =
+    '<div class="flex items-center gap-2 mt-2 text-xs text-muted-foreground">' +
+    '<span class="inline-block w-3 h-3 rounded-sm bg-primary/10 ring-1 ring-primary/30 shrink-0"></span>' +
+    '<span>Newton coefficients (diagonal entries used in interpolation)</span></div>';
+
+  const expandBtn = showAll ? '' :
+    '<div class="flex justify-center mt-3">' +
+    '<button onclick="expandCollapsedSteps()" class="text-xs font-medium text-primary hover:underline flex items-center gap-1">' +
+    '<i data-lucide="maximize-2" class="w-3 h-3"></i> Expand full table</button></div>';
+
+  const html =
+    '<div class="rounded-xl border bg-card shadow-sm overflow-hidden">' +
     '<div class="overflow-x-auto">' +
-    '<table class="w-full text-sm text-left border-collapse">' +
-    '<thead class="bg-muted/50 text-muted-foreground text-xs uppercase border-b">' +
-    '<tr>' + headerHtml + '</tr>' +
-    '</thead>' +
+    '<table class="w-full text-sm border-collapse">' +
+    '<thead class="bg-muted/50 border-b"><tr>' + headerHtml + '</tr></thead>' +
     '<tbody class="divide-y">' + bodyHtml + '</tbody>' +
-    '</table></div></div>';
+    '</table></div></div>' + legend + expandBtn;
 
-  if (!showAll) {
-    tableHtml +=
-      '<div class="flex justify-center mt-4">' +
-      '<button onclick="expandCollapsedSteps()" class="text-xs font-medium text-primary hover:underline flex items-center gap-1">' +
-      '<i data-lucide="maximize-2" class="w-3 h-3"></i> Expand full table' +
-      '</button></div>';
-  }
-
-  container.innerHTML = tableHtml;
-  if (window.lucide) lucide.createIcons();
-}
-
-// Matrix form
-
-// Render the matrix system L a = y.
-function renderMatrixForm(data) {
-  const container = document.getElementById('matrix-container');
-  if (!container) return;
-
-  if (!data || !data.pts_x || !data.dd_coeffs) {
-    container.innerHTML =
-      '<div class="text-center text-muted-foreground p-8">' +
-      '<h3 class="text-lg font-medium mb-2">Awaiting calculation…</h3>' +
-      '<p>Input data points and calculate to see the matrix form.</p>' +
-      '</div>';
-    return;
-  }
-
-  const x      = ensureArray(data.pts_x);
-  const a      = ensureArray(data.dd_coeffs);  // Newton coefficients = diag(DD table)
-  const y      = ensureArray(data.pts_y || []);
-  const n      = x.length;
-
-  // Build L matrix
-  const L = [];
-  for (let i = 0; i < n; i++) {
-    L.push(new Array(n).fill(0));
-    for (let j = 0; j <= i; j++) {
-      if (j === 0) {
-        L[i][j] = 1;
-      } else {
-        let prod = 1;
-        for (let k = 0; k < j; k++) prod *= (x[i] - x[k]);
-        L[i][j] = prod;
-      }
-    }
-  }
-
-  // Explanation card
-  const explainHtml =
-    '<div class="rounded-lg border bg-card p-4 mb-3 shadow-sm">' +
-    '<div class="flex items-center gap-2 mb-3">' +
-    '<i data-lucide="info" class="w-4 h-4 text-primary shrink-0"></i>' +
-    '<h4 class="font-semibold text-sm text-foreground">Matrix Form' +
-    '<span class="font-normal text-muted-foreground ml-1.5">— Lower Triangular System</span></h4>' +
-    '</div>' +
-    '<div class="text-sm text-muted-foreground space-y-3">' +
-    '<p>The Newton interpolating polynomial can be written as a linear system ' +
-    '\\(L\\,\\mathbf{a} = \\mathbf{y}\\), where:</p>' +
-    '<ul class="list-disc pl-5 space-y-1 text-xs">' +
-    '<li><strong class="text-foreground">\\(L\\)</strong> — lower-triangular matrix with ' +
-    '\\(L_{ij} = \\prod_{k=0}^{j-1}(x_i - x_k)\\) for \\(j \\le i\\), else 0</li>' +
-    '<li><strong class="text-foreground">\\(\\mathbf{a}\\)</strong> — vector of Newton ' +
-    'coefficients (the diagonal of the divided-difference table)</li>' +
-    '<li><strong class="text-foreground">\\(\\mathbf{y}\\)</strong> — vector of function ' +
-    'values \\(f(x_i)\\)</li>' +
-    '</ul>' +
-    '<div class="rounded-md bg-muted p-3 overflow-x-auto mj-container mt-2">' +
-    '\\[L_{ij} = \\prod_{k=0}^{j-1}(x_i - x_k), \\quad j \\le i; \\quad L_{ij} = 0, \\quad j > i\\]' +
-    '</div>' +
-    '<p class="text-xs">Because \\(L\\) is lower-triangular, forward substitution solves ' +
-    'for \\(\\mathbf{a}\\) in \\(O(n^2)\\) — the same cost as building the divided-difference table.</p>' +
-    '</div></div>';
-
-  // Limit display to 6 × 6
-  const displayN = Math.min(n, 6);
-  const truncated = n > 6;
-
-  // Build L rows
-  const lRows = [];
-  for (let i = 0; i < displayN; i++) {
-    const cells = [];
-    for (let j = 0; j < displayN; j++) {
-      const val = L[i][j];
-      cells.push(Math.abs(val) < 1e-9 ? '0' : fmtNum(val));
-    }
-    if (truncated) cells.push('\\cdots');
-    lRows.push(cells.join(' & '));
-  }
-  if (truncated) {
-    const dots = new Array(displayN).fill('\\vdots');
-    dots.push('\\ddots');
-    lRows.push(dots.join(' & '));
-  }
-
-   // Build vectors
-  const aVec = a.slice(0, displayN).map((v, i) => 'a_{' + i + '} = ' + fmtNum(v));
-  if (truncated) aVec.push('\\vdots');
-
-  const yVec = y.slice(0, displayN).map((v, i) => 'y_{' + i + '} = ' + fmtNum(v));
-  if (truncated) yVec.push('\\vdots');
-
-  // Build LaTeX
-  const lTex = '\\begin{bmatrix}' + lRows.join(' \\\\ ') + '\\end{bmatrix}';
-  const aTex = '\\begin{bmatrix}' + aVec.join(' \\\\ ') + '\\end{bmatrix}';
-  const yTex = '\\begin{bmatrix}' + yVec.join(' \\\\ ') + '\\end{bmatrix}';
-
-  const systemLatex = lTex + ' ' + aTex + ' = ' + yTex;
-
-  const matrixCard =
-    '<div class="rounded-lg border bg-card p-4 mb-3 shadow-sm">' +
-    '<div class="flex items-center gap-2 mb-3">' +
-    '<i data-lucide="grid" class="w-4 h-4 text-primary shrink-0"></i>' +
-    '<h4 class="font-semibold text-sm text-foreground">System \\(L\\,\\mathbf{a} = \\mathbf{y}\\)' +
-    '<span class="font-normal text-muted-foreground ml-1.5">— Populated Values</span></h4>' +
-    '</div>' +
-    (truncated
-      ? '<p class="text-xs text-muted-foreground mb-2">Showing first 6 × 6 block (full system is ' + n + ' × ' + n + ').</p>'
-      : '') +
-    '<div class="overflow-x-auto mj-container">' +
-    '\\[' + systemLatex + '\\]' +
-    '</div>' +
-    '</div>';
-
-  // Verification card
-  let verifyItems = '';
-  for (let i = 0; i < n; i++) {
-    // Compute row result
-    let dot = 0;
-    for (let j = 0; j <= i; j++) dot += L[i][j] * a[j];
-
-    let rowTerms = '';
-    for (let j = 0; j <= i; j++) {
-      const lval = fmtNum(L[i][j]);
-      const aval = fmtNum(a[j]);
-      rowTerms += (j > 0 ? ' + ' : '') + lval + ' \\cdot ' + aval;
-    }
-    const check = Math.abs(dot - (y[i] || 0)) < 1e-6
-      ? '<span class="text-green-600 font-mono text-xs ml-2">✓</span>'
-      : '<span class="text-red-500 font-mono text-xs ml-2">✗</span>';
-
-    verifyItems +=
-      '<div class="pl-2 py-1.5 overflow-x-auto overflow-y-hidden mj-container flex items-center">' +
-      '\\[' + 'L_{' + i + ',\\bullet} \\cdot \\mathbf{a} = ' + rowTerms + ' = ' + fmtNum(dot) + '\\]' +
-      check +
-      '</div>';
-  }
-
-  const verifyCard = buildStepCard(
-    'Verification',
-    'Row-by-Row Check',
-    verifyItems,
-    'check-circle'
-  );
-
-  container.innerHTML = explainHtml + matrixCard + verifyCard;
-  if (window.lucide) lucide.createIcons();
-
-  if (window.MathJax) {
-    requestAnimationFrame(() => {
-      MathJax.typesetPromise([container]).catch(err =>
-        console.error('[Steps] MathJax matrix typeset error:', err)
-      );
-    });
-  }
-}
-
-// Steps mode toggle
-
-// Switch between divided differences and matrix form.
-function switchStepsMode(mode) {
-  _stepsMode = mode;
-
-  const ddPane     = document.getElementById('steps-dd-pane');
-  const matrixPane = document.getElementById('steps-matrix-pane');
-  const btnDD      = document.getElementById('steps-mode-dd');
-  const btnMatrix  = document.getElementById('steps-mode-matrix');
-
-  if (!ddPane || !matrixPane) return;
-
-  // Show selected pane
-  if (mode === 'dd') {
-    ddPane.classList.remove('hidden');
-    matrixPane.classList.add('hidden');
-  } else {
-    ddPane.classList.add('hidden');
-    matrixPane.classList.remove('hidden');
-    // Render matrix form if needed
-    if (_stepsData) renderMatrixForm(_stepsData);
-  }
-
-  // Reset button styles
-  [btnDD, btnMatrix].forEach(btn => {
-    if (!btn) return;
-    btn.classList.remove('bg-background', 'text-foreground', 'shadow-sm', 'active');
-    btn.classList.add('text-muted-foreground');
+  // Single source of truth — write identical table to both tab containers
+  ['steps-table-container', 'summary-table-container'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = html;
   });
 
-  // Highlight active button
-  const activeBtn = mode === 'dd' ? btnDD : btnMatrix;
-  if (activeBtn) {
-    activeBtn.classList.remove('text-muted-foreground');
-    activeBtn.classList.add('bg-background', 'text-foreground', 'shadow-sm', 'active');
-  }
+  if (window.lucide) lucide.createIcons();
 }
 
-// Copy to clipboard
+// ── Clipboard ─────────────────────────────────────────────────────────────────
 
-// Copy the simplified polynomial.
 function copyEquationToClipboard(context) {
   const latex = _currentSimplifiedLatex;
-  if (!latex) {
-    showCopyToast('Nothing to copy yet.', true);
-    return;
-  }
-
-  // Wrap in display math
-  const textToCopy = '\\[' + latex + '\\]';
-
+  if (!latex) { showCopyToast('Nothing to copy yet.', true); return; }
+  const text = '\\[' + latex + '\\]';
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(textToCopy)
-      .then(() => showCopyToast('LaTeX copied to clipboard!'))
-      .catch(() => fallbackCopy(textToCopy));
+    navigator.clipboard.writeText(text).then(() => showCopyToast('LaTeX copied!')).catch(() => fallbackCopy(text));
   } else {
-    fallbackCopy(textToCopy);
+    fallbackCopy(text);
   }
 }
 
-// Fallback copy method
 function fallbackCopy(text) {
   const ta = document.createElement('textarea');
   ta.value = text;
-  ta.style.position = 'fixed';
-  ta.style.opacity  = '0';
+  ta.style.cssText = 'position:fixed;opacity:0';
   document.body.appendChild(ta);
-  ta.focus();
-  ta.select();
-  try {
-    document.execCommand('copy');
-    showCopyToast('LaTeX copied to clipboard!');
-  } catch (e) {
-    showCopyToast('Copy failed — please copy manually.', true);
-  }
+  ta.focus(); ta.select();
+  try { document.execCommand('copy'); showCopyToast('LaTeX copied!'); }
+  catch (e) { showCopyToast('Copy failed.', true); }
   document.body.removeChild(ta);
 }
 
-// Show copy notification
 function showCopyToast(msg, isError) {
-  const toast    = document.getElementById('copy-toast');
-  const toastMsg = document.getElementById('copy-toast-msg');
+  const toast = document.getElementById('copy-toast');
+  const msgEl = document.getElementById('copy-toast-msg');
   if (!toast) return;
-
-  toastMsg.textContent = msg || 'Copied!';
-  toast.style.backgroundColor = isError
-    ? 'hsl(var(--destructive))'
-    : 'hsl(var(--foreground))';
+  msgEl.textContent = msg;
+  toast.style.backgroundColor = isError ? 'hsl(var(--destructive))' : '';
   toast.classList.remove('hidden');
   toast.classList.add('flex');
-
-  clearTimeout(toast._hideTimer);
-  toast._hideTimer = setTimeout(() => {
-    toast.classList.add('hidden');
-    toast.classList.remove('flex');
-  }, 2200);
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { toast.classList.add('hidden'); toast.classList.remove('flex'); }, 2200);
 }
 
-// Expand collapsed steps
+// ── Expand collapsed state ────────────────────────────────────────────────────
 
 function expandCollapsedSteps() {
   _stepsExpanded = true;
   if (_stepsData) renderStepsFromData(_stepsData);
 }
 
-// Main renderer
+// ── Main renderer ─────────────────────────────────────────────────────────────
 
-// Render all steps from server data.
 function renderStepsFromData(data) {
-  console.log('[Steps] renderStepsFromData called');
   _stepsData = data;
-
   const container = document.getElementById('steps-container');
-  if (!container) {
-    console.error('[Steps] steps-container not found in DOM!');
-    return;
-  }
+  if (!container) return;
 
   if (data.error || !data.dd_table) {
     container.innerHTML =
       '<div class="text-center text-muted-foreground p-8">' +
       '<h3 class="text-lg font-medium mb-2">Awaiting calculation…</h3>' +
-      '<p>Input data points and calculate to see steps.</p>' +
-      '</div>';
+      '<p>Input data points and calculate to see steps.</p></div>';
     return;
   }
 
   const x      = ensureArray(data.pts_x);
   const coeffs = ensureArray(data.dd_coeffs);
-  const rawTable = data.dd_table;
   const n      = x.length;
-  const maxOrder = n - 1;
+  const maxOrd = n - 1;
 
-  console.log('[Steps] Processing', n, 'points, max order', maxOrder);
+  // Normalise DD table from R's row-major JSON
+  const table = data.dd_table.map(row =>
+    Array.from({ length: n }, (_, j) => row[j] != null ? Number(row[j]) : null)
+  );
 
-  // Convert table values to numbers
-  const table = [];
-  for (let i = 0; i < n; i++) {
-    const row = [];
-    const src = rawTable[i];
-    for (let j = 0; j < n; j++) {
-      row.push(src[j] != null ? Number(src[j]) : null);
-    }
-    table.push(row);
-  }
-
-  // Prepare LaTeX for clipboard
+  // Cache simplified LaTeX for clipboard before building HTML
   _currentSimplifiedLatex = simplifiedLatex(x, coeffs);
 
-  // Build HTML
+  // Render unified DD table to both Steps tab and Table tab (req 4 + 5 + 6)
+  renderSummaryTable(x, table);
+
+  // Build order-by-order breakdown cards
   let html = '';
   try {
     html += renderOrderZero(x, table);
-    if (maxOrder <= STEPS_COLLAPSE_THRESHOLD || _stepsExpanded) {
-      for (let ord = 1; ord <= maxOrder; ord++) {
-        html += renderOrderK(ord, x, table, n);
-      }
+    if (maxOrd <= STEPS_COLLAPSE_THRESHOLD || _stepsExpanded) {
+      for (let ord = 1; ord <= maxOrd; ord++) html += renderOrderK(ord, x, table, n);
     } else {
       html += renderOrderK(1, x, table, n);
       html += renderOrderK(2, x, table, n);
-      html += renderCollapsedOrders(3, maxOrder - 2);
-      html += renderOrderK(maxOrder - 1, x, table, n);
-      html += renderOrderK(maxOrder, x, table, n);
+      html += renderCollapsedOrders(3, maxOrd - 2);
+      html += renderOrderK(maxOrd - 1, x, table, n);
+      html += renderOrderK(maxOrd, x, table, n);
     }
     html += renderFinalPolynomial(x, coeffs);
-    html += '<div class="mt-8 pt-4 border-t text-center text-[10px] text-muted-foreground italic">' +
-            'Walkthrough generated successfully.</div>';
+    html += '<div class="mt-8 pt-4 border-t text-center text-[10px] text-muted-foreground italic">Walkthrough generated successfully.</div>';
   } catch (e) {
-    console.error('[Steps] Error building steps HTML:', e);
+    console.error('[Steps] render error:', e);
   }
 
   container.innerHTML = html;
-  console.log('[Steps] DOM updated');
 
-  // Refresh matrix form if active
-  if (_stepsMode === 'matrix') renderMatrixForm(data);
-
-  // Render summary table
-  renderSummaryTable(x, table);
-
-  // Render MathJax
   if (window.MathJax) {
     requestAnimationFrame(() => {
-      MathJax.typesetPromise([container]).then(() => {
-        console.log('[Steps] MathJax typeset complete');
-      }).catch(err => console.error('[Steps] MathJax typeset error:', err));
+      MathJax.typesetPromise([container]).catch(err => console.error('[Steps] MathJax error:', err));
     });
   }
-
   if (window.lucide) lucide.createIcons();
 }
 
-// Shiny handlers
+// ── Shiny handler ─────────────────────────────────────────────────────────────
 
 function initStepsHandlers() {
-  if (window.Shiny) {
-    console.log('[Steps] Registering update_steps_data handler');
-
-    Shiny.addCustomMessageHandler('update_steps_data', function(msg) {
-      _stepsExpanded = false;
-      renderStepsFromData(msg);
-    });
-
-    // Update matrix form
-    Shiny.addCustomMessageHandler('update_matrix_data', function(msg) {
-      if (_stepsMode === 'matrix') renderMatrixForm(_stepsData);
-    });
-
-  } else {
-    console.warn('[Steps] Shiny not found, retrying...');
-    setTimeout(initStepsHandlers, 100);
-  }
+  if (!window.Shiny) { setTimeout(initStepsHandlers, 100); return; }
+  Shiny.addCustomMessageHandler('update_steps_data', function(msg) {
+    _stepsExpanded = false;
+    renderStepsFromData(msg);
+  });
 }
 
-$(document).on('shiny:connected', function() {
-  console.log('[Steps] Shiny connected, initializing handlers');
-  initStepsHandlers();
-});
+$(document).on('shiny:connected', initStepsHandlers);
