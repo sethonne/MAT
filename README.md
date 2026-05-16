@@ -45,6 +45,7 @@ MAT/
 You can run this application in two ways:
 
 ### Option 1: Run Locally (Development)
+
 1. **Download/Clone** this repository to your machine.
 2. Ensure you have the required R packages installed:
    ```r
@@ -57,7 +58,9 @@ You can run this application in two ways:
    ```
 
 ### Option 2: Run Directly from GitHub
+
 You can launch the latest version of the app directly from the R console without manual downloading:
+
 ```r
 if (!require("shiny")) install.packages("shiny")
 shiny::runGitHub("MAT", "sethonne")
@@ -66,7 +69,9 @@ shiny::runGitHub("MAT", "sethonne")
 ---
 
 ## Quick Setup Script
+
 For a completely automated setup, you can use the included `setup.R` script:
+
 1. Open `setup.R`.
 2. Run the script to automatically install dependencies and launch the app.
 
@@ -75,9 +80,19 @@ For a completely automated setup, you can use the included `setup.R` script:
 ## External Dependencies
 
 The application leverages several modern libraries via CDN:
+
 - **Tailwind CSS:** For styling and layout.
 - **Chart.js:** For interactive data visualization.
 - **MathJax 3:** For rendering high-quality mathematical equations.
 - **Lucide Icons:** For the UI icon system.
 - **Inter Font:** For modern typography.
 
+---
+
+## Development Team
+
+- **JAPETH T. GUZON** — Project concept, mathematical verification & QA
+- **MATTHEW CEDRIC D. CALAYCAY** — UI architecture, simulation engine & QA
+- **PHILIP ISIDRO J. GO** — UI enhancements & visual refinements
+- **SAMUEL ETHAN S. BONGHANOY** — Interactive features & gameplay QA
+- **VENZHOWER M. MANLANGIT** — Logic implementation & mathematical corrections
