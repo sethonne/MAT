@@ -1,5 +1,6 @@
 # Quick Setup & Run Script for MAT
 # This script installs dependencies and runs the app directly from GitHub
+# For the full code, please visit `https://github.com/sethonne/MAT`
 
 # To quickly run
 # on windows press: `Ctrl + Shift + S`
