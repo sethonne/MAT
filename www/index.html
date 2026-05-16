@@ -4,29 +4,76 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Divided Differences Calculator</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Fonts: Inter -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Icons: Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- MathJax for LaTeX rendering -->
+    <script
+      id="MathJax-script"
+      async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    ></script>
+
     {{ headContent() }}
     <link rel="stylesheet" href="style.css" />
+
     <script>
       tailwind.config = {
         theme: {
           extend: {
             colors: {
-              border: "hsl(var(--border))", input: "hsl(var(--input))", ring: "hsl(var(--ring))",
-              background: "hsl(var(--background))", foreground: "hsl(var(--foreground))",
-              primary: { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
-              secondary: { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
-              destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
-              muted: { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
-              accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
-              popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
-              card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
+              border: "hsl(var(--border))",
+              input: "hsl(var(--input))",
+              ring: "hsl(var(--ring))",
+              background: "hsl(var(--background))",
+              foreground: "hsl(var(--foreground))",
+              primary: {
+                DEFAULT: "hsl(var(--primary))",
+                foreground: "hsl(var(--primary-foreground))",
+              },
+              secondary: {
+                DEFAULT: "hsl(var(--secondary))",
+                foreground: "hsl(var(--secondary-foreground))",
+              },
+              destructive: {
+                DEFAULT: "hsl(var(--destructive))",
+                foreground: "hsl(var(--destructive-foreground))",
+              },
+              muted: {
+                DEFAULT: "hsl(var(--muted))",
+                foreground: "hsl(var(--muted-foreground))",
+              },
+              accent: {
+                DEFAULT: "hsl(var(--accent))",
+                foreground: "hsl(var(--accent-foreground))",
+              },
+              popover: {
+                DEFAULT: "hsl(var(--popover))",
+                foreground: "hsl(var(--popover-foreground))",
+              },
+              card: {
+                DEFAULT: "hsl(var(--card))",
+                foreground: "hsl(var(--card-foreground))",
+              },
             },
-            borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },
+            borderRadius: {
+              lg: "var(--radius)",
+              md: "calc(var(--radius) - 2px)",
+              sm: "calc(var(--radius) - 4px)",
+            },
           },
         },
       };
@@ -34,414 +81,1091 @@
   </head>
   <body>
     <div class="min-h-screen bg-slate-50/50 text-foreground flex flex-col">
-
       <!-- Navbar -->
-      <header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div class="container mx-auto flex h-14 items-center justify-between px-4 md:px-8">
+      <header
+        class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+      >
+        <div
+          class="container mx-auto flex h-14 items-center justify-between px-4 md:px-8"
+        >
           <div class="flex items-center gap-2">
             <i data-lucide="calculator" class="h-5 w-5 text-primary"></i>
-            <span class="font-semibold tracking-tight">Polynomial Interpolation</span>
+            <span class="font-semibold tracking-tight"
+              >Polynomial Interpolation</span
+            >
           </div>
         </div>
       </header>
 
       <main class="flex-1 p-4 md:p-6 lg:p-8">
         <div class="max-w-[1400px] mx-auto flex flex-col gap-6 relative">
-
-          <div class="mb-4 flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between shrink-0">
+          <div
+            class="mb-4 flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between shrink-0"
+          >
             <div>
-              <h1 class="text-3xl font-bold tracking-tight">Newton's Divided Differences Calculator</h1>
-              <p class="text-muted-foreground mt-1">Interactive learning tool for polynomial interpolation using divided differences.</p>
+              <h1 class="text-3xl font-bold tracking-tight">
+                Newton's Divided Differences Calculator
+              </h1>
+              <p class="text-muted-foreground mt-1">
+                Interactive learning tool for polynomial interpolation using
+                divided differences.
+              </p>
             </div>
           </div>
 
-          <!-- Tab Navigation -->
-          <div class="w-full flex justify-center md:justify-start mb-4 shrink-0">
-            <div class="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
-              <button class="tab-btn active inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                data-state="active" onclick="switchTab('intro')">
-                <i data-lucide="book-open" class="w-4 h-4 mr-2"></i>Introduction
+          <!-- Tabs Navigation -->
+          <div
+            class="w-full flex justify-center md:justify-start mb-4 shrink-0"
+          >
+            <div
+              class="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground"
+            >
+              <button
+                class="tab-btn active inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                data-state="active"
+                onclick="switchTab('intro')"
+              >
+                <i data-lucide="book-open" class="w-4 h-4 mr-2"></i>
+                Introduction
               </button>
-              <button class="tab-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                data-state="inactive" onclick="switchTab('calculate')">
-                <i data-lucide="activity" class="w-4 h-4 mr-2"></i>Calculate &amp; Visualize
+              <button
+                class="tab-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                data-state="inactive"
+                onclick="switchTab('calculate')"
+              >
+                <i data-lucide="activity" class="w-4 h-4 mr-2"></i> Calculate &
+                Visualize
+              </button>
+              <button
+                class="tab-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                data-state="inactive"
+                onclick="switchTab('conclusion')"
+              >
+                <i data-lucide="flag" class="w-4 h-4 mr-2"></i> Conclusion &
+                Takeaways
               </button>
             </div>
           </div>
 
           <div class="w-full">
-
-            <!-- ═══════════════════════ INTRODUCTION TAB ═══════════════════════ -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- INTRODUCTION TAB                                           -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
             <div id="intro" class="tab-content active space-y-6">
-
+              <!-- Row 1 — Definition + Newton Form -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                <!-- Definition Card -->
-                <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
+                <!-- Definition Card (enhanced) -->
+                <div
+                  class="rounded-xl border bg-card text-card-foreground shadow-sm"
+                >
                   <div class="flex flex-col space-y-1.5 p-6">
-                    <h3 class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2">
-                      <i data-lucide="info" class="w-5 h-5 text-primary"></i>Definition
+                    <h3
+                      class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2"
+                    >
+                      <i data-lucide="info" class="w-5 h-5 text-primary"></i>
+                      Definition
                     </h3>
                   </div>
                   <div class="p-6 pt-0 text-sm text-muted-foreground space-y-4">
                     <p>
-                      <strong class="text-foreground">Newton's Divided Differences</strong> is a recursive method for constructing
-                      the unique polynomial of degree&nbsp;&le;&nbsp;<em>n</em> that passes through
-                      <em>n&nbsp;+&nbsp;1</em> distinct data points \((x_0,y_0),\ldots,(x_n,y_n)\).
+                      <strong class="text-foreground"
+                        >Newton's Divided Differences</strong
+                      >
+                      is a recursive method for constructing the unique
+                      polynomial of degree&nbsp;&le;&nbsp;<em>n</em> that passes
+                      through <em>n&nbsp;+&nbsp;1</em> distinct data points
+                      \((x_0, y_0), (x_1, y_1), \ldots, (x_n, y_n)\). It
+                      expresses the interpolating polynomial in
+                      <em>Newton form</em>, where each additional point
+                      contributes exactly one new coefficient.
                     </p>
-                    <div class="rounded-md bg-muted/60 border p-4 space-y-2 text-xs">
-                      <p class="font-semibold text-foreground text-sm mb-1">Key Vocabulary</p>
+
+                    <!-- Key vocabulary -->
+                    <div
+                      class="rounded-md bg-muted/60 border p-4 space-y-2 text-xs"
+                    >
+                      <p class="font-semibold text-foreground text-sm mb-1">
+                        Key Vocabulary
+                      </p>
                       <div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
                         <span class="font-mono text-primary">\(x_i\)</span>
-                        <span><strong>Nodes</strong> — all nodes must be distinct: \(x_i \neq x_j\) for \(i \neq j\).</span>
+                        <span
+                          ><strong>Nodes</strong> — the known \(x\)-coordinates.
+                          All nodes must be <em>distinct</em>: \(x_i \neq x_j\)
+                          for \(i \neq j\).</span
+                        >
+
                         <span class="font-mono text-primary">\(f[x_i]\)</span>
-                        <span><strong>Zeroth-order DD</strong> — the function value \(f(x_i)=y_i\).</span>
-                        <span class="font-mono text-primary">\(f[x_i,x_j]\)</span>
-                        <span><strong>First-order DD</strong> — slope of the secant through two points.</span>
-                        <span class="font-mono text-primary">\(f[x_i,\ldots,x_k]\)</span>
-                        <span><strong>Higher-order DD</strong> — defined recursively below.</span>
+                        <span
+                          ><strong>Zeroth-order DD</strong> — simply the
+                          function value \(f(x_i) = y_i\).</span
+                        >
+
+                        <span class="font-mono text-primary"
+                          >\(f[x_i,x_j]\)</span
+                        >
+                        <span
+                          ><strong>First-order DD</strong> — the slope of the
+                          secant through two points.</span
+                        >
+
+                        <span class="font-mono text-primary"
+                          >\(f[x_i,\ldots,x_k]\)</span
+                        >
+                        <span
+                          ><strong>Higher-order DD</strong> — generalised
+                          divided differences defined recursively.</span
+                        >
                       </div>
                     </div>
-                    <p class="font-medium text-foreground text-xs uppercase tracking-wider">Recursive Formula</p>
-                    <div class="rounded-md bg-muted p-4 overflow-x-auto min-h-[72px] mj-container">
+
+                    <!-- Recursive formula -->
+                    <p
+                      class="font-medium text-foreground text-xs uppercase tracking-wider mt-2"
+                    >
+                      Recursive Formula
+                    </p>
+                    <div
+                      class="rounded-md bg-muted p-4 flex items-center justify-start overflow-x-auto min-h-[72px] mj-container"
+                    >
                       <span class="text-base text-foreground font-medium">
-                        \[f[x_i,\ldots,x_j]=\frac{f[x_{i+1},\ldots,x_j]-f[x_i,\ldots,x_{j-1}]}{x_j-x_i},\quad i\neq j\]
+                        \[f[x_i, \ldots, x_j] = \frac{f[x_{i+1}, \ldots, x_j] -
+                        f[x_i, \ldots, x_{j-1}]}{x_j - x_i}, \quad i \neq j\]
                       </span>
                     </div>
-                    <div class="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs">
-                      <strong class="text-foreground">Uniqueness:</strong> Given \(n+1\) points with \(x_i\neq x_j\) for
-                      \(i\neq j\), there exists exactly one polynomial of degree \(\le n\) interpolating them.
+
+                    <p class="text-xs">
+                      The condition <strong>\(i \neq j\)</strong> (equivalently
+                      \(x_j - x_i \neq 0\)) ensures the denominator is never
+                      zero, which is guaranteed when all nodes are distinct.
+                    </p>
+
+                    <!-- Uniqueness note -->
+                    <div
+                      class="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs"
+                    >
+                      <p>
+                        <strong class="text-foreground"
+                          >Uniqueness theorem:</strong
+                        >
+                        Given \(n+1\) points with distinct \(x_i\) (\(x_i \neq
+                        x_j\) for \(i \neq j\)), there exists
+                        <em>exactly one</em> polynomial of degree \(\le n\)
+                        interpolating them. Newton's method finds it efficiently
+                        in \(O(n^2)\) operations.
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                <!-- Newton Form Card -->
-                <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
+                <!-- Newton Form Card (enhanced) -->
+                <div
+                  class="rounded-xl border bg-card text-card-foreground shadow-sm"
+                >
                   <div class="flex flex-col space-y-1.5 p-6">
-                    <h3 class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2">
-                      <i data-lucide="sigma" class="w-5 h-5 text-primary"></i>Newton Form Formula
+                    <h3
+                      class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2"
+                    >
+                      <i data-lucide="sigma" class="w-5 h-5 text-primary"></i>
+                      Newton Form Formula
                     </h3>
                   </div>
                   <div class="p-6 pt-0 text-sm text-muted-foreground space-y-4">
-                    <p>The interpolating polynomial in <em>Newton form</em> uses nested basis polynomials built from the nodes:</p>
-                    <div class="rounded-md bg-muted p-4 overflow-x-auto min-h-[100px] mj-container">
+                    <p>
+                      The interpolating polynomial written in
+                      <em>Newton form</em>
+                      uses nested basis polynomials built from the nodes:
+                    </p>
+
+                    <!-- Expanded Newton form -->
+                    <div
+                      class="rounded-md bg-muted p-4 overflow-x-auto min-h-[100px] mj-container"
+                    >
                       <span class="text-base text-foreground font-medium">
-                        \[\begin{aligned}P_n(x)&=f[x_0]\\&\quad+f[x_0,x_1](x-x_0)\\&\quad+f[x_0,x_1,x_2](x-x_0)(x-x_1)\\&\quad+\cdots\\&\quad+f[x_0,\ldots,x_n]\prod_{j=0}^{n-1}(x-x_j)\end{aligned}\]
+                        \[\begin{aligned} P_n(x) &= f[x_0] \\ &\quad + f[x_0,
+                        x_1](x - x_0) \\ &\quad + f[x_0, x_1, x_2](x - x_0)(x -
+                        x_1) \\ &\quad + \cdots \\ &\quad + f[x_0, \ldots,
+                        x_n]\prod_{j=0}^{n-1}(x - x_j) \end{aligned}\]
                       </span>
                     </div>
-                    <p class="font-medium text-foreground text-xs uppercase tracking-wider">Compact Form</p>
-                    <div class="rounded-md bg-muted p-4 overflow-x-auto min-h-[64px] mj-container">
+
+                    <!-- Compact sigma form -->
+                    <p
+                      class="font-medium text-foreground text-xs uppercase tracking-wider mt-1"
+                    >
+                      Compact Form
+                    </p>
+                    <div
+                      class="rounded-md bg-muted p-4 flex items-center justify-start overflow-x-auto min-h-[64px] mj-container"
+                    >
                       <span class="text-base text-foreground font-medium">
-                        \[P_n(x)=\sum_{k=0}^{n}f[x_0,\ldots,x_k]\prod_{j=0}^{k-1}(x-x_j)\]
+                        \[P_n(x) = \sum_{k=0}^{n} f[x_0, \ldots, x_k]
+                        \prod_{j=0}^{k-1}(x - x_j)\]
                       </span>
+                    </div>
+
+                    <!-- Coefficient explanation -->
+                    <div
+                      class="rounded-md bg-muted/60 border p-3 text-xs space-y-1"
+                    >
+                      <p class="font-semibold text-foreground">
+                        Coefficient interpretation
+                      </p>
+                      <p>
+                        Each divided difference \(f[x_0, \ldots, x_k]\) acts as
+                        the coefficient of the <em>k</em>-th Newton basis
+                        polynomial \(\omega_k(x) = \prod_{j=0}^{k-1}(x - x_j)\).
+                        The final polynomial equals \(P_n(x) = \sum_{k} a_k
+                        \,\omega_k(x)\) where \(a_k = f[x_0, \ldots, x_k]\).
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
 
+              <!-- Row 2 — Applications + Video Game Example -->
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                <!-- Applications Card -->
-                <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
+                <!-- Applications Card (original + video games) -->
+                <div
+                  class="rounded-xl border bg-card text-card-foreground shadow-sm"
+                >
                   <div class="flex flex-col space-y-1.5 p-6">
-                    <h3 class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2">
-                      <i data-lucide="target" class="w-5 h-5 text-primary"></i>Applications
+                    <h3
+                      class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2"
+                    >
+                      <i data-lucide="target" class="w-5 h-5 text-primary"></i>
+                      Applications
                     </h3>
                   </div>
                   <div class="p-6 pt-0 text-sm text-muted-foreground space-y-4">
                     <div class="flex gap-3">
-                      <i data-lucide="line-chart" class="w-5 h-5 text-muted-foreground shrink-0"></i>
-                      <div><strong class="text-foreground">Data Curve Fitting.</strong>
-                        <p>Interpolating a smooth curve through specific discrete control points.</p></div>
+                      <i
+                        data-lucide="line-chart"
+                        class="w-5 h-5 text-muted-foreground shrink-0"
+                      ></i>
+                      <div>
+                        <strong class="text-foreground"
+                          >Data Curve Fitting.</strong
+                        >
+                        <p>
+                          Interpolating a smooth curve through specific discrete
+                          control points.
+                        </p>
+                      </div>
                     </div>
                     <div class="flex gap-3">
-                      <i data-lucide="crosshair" class="w-5 h-5 text-muted-foreground shrink-0"></i>
-                      <div><strong class="text-foreground">Estimating Missing Values.</strong>
-                        <p>Approximating the value of a function at intermediate points where measurements are unavailable.</p></div>
+                      <i
+                        data-lucide="crosshair"
+                        class="w-5 h-5 text-muted-foreground shrink-0"
+                      ></i>
+                      <div>
+                        <strong class="text-foreground"
+                          >Estimating Missing Values.</strong
+                        >
+                        <p>
+                          Approximating the value of a function at intermediate
+                          points where measurements are unavailable.
+                        </p>
+                      </div>
                     </div>
                     <div class="flex gap-3">
-                      <i data-lucide="function-square" class="w-5 h-5 text-muted-foreground shrink-0"></i>
-                      <div><strong class="text-foreground">Numerical Analysis.</strong>
-                        <p>Foundation for numerical differentiation and integration (Newton-Cotes formulas).</p></div>
+                      <i
+                        data-lucide="function-square"
+                        class="w-5 h-5 text-muted-foreground shrink-0"
+                      ></i>
+                      <div>
+                        <strong class="text-foreground"
+                          >Numerical Analysis.</strong
+                        >
+                        <p>
+                          Serving as the mathematical foundation for numerical
+                          differentiation and integration (e.g., Newton-Cotes
+                          formulas).
+                        </p>
+                      </div>
                     </div>
                     <div class="flex gap-3">
-                      <i data-lucide="gamepad-2" class="w-5 h-5 text-muted-foreground shrink-0"></i>
-                      <div><strong class="text-foreground">Video Game Development.</strong>
-                        <p>Animation systems use polynomial curves to interpolate between keyframe poses. Physics engines fit
-                        polynomials to terrain heightmaps so vehicles follow hills smoothly — exactly what this tool's
-                        car demo demonstrates. Camera paths, particle trajectories, and shader gradients all rely on
-                        the same principle: sample a few control points, recover the polynomial, evaluate at every frame.</p>
+                      <i
+                        data-lucide="gamepad-2"
+                        class="w-5 h-5 text-muted-foreground shrink-0"
+                      ></i>
+                      <div>
+                        <strong class="text-foreground"
+                          >Video Game Development.</strong
+                        >
+                        <p>
+                          Interpolation underpins nearly every smooth motion in
+                          games. Animation systems use polynomial curves to
+                          generate the in-between frames of a character's walk
+                          cycle from a handful of keyframe poses. Physics
+                          engines fit polynomials to terrain heightmaps so
+                          vehicles can follow hills smoothly — exactly what this
+                          tool's car demo demonstrates. Camera paths, particle
+                          trajectories, and shader colour gradients all rely on
+                          the same principle: sample a few control points,
+                          recover the polynomial, evaluate it cheaply at every
+                          frame.
+                        </p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- Video Game Spotlight Card -->
-                <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
+                <!-- Video Game Deep-Dive Card -->
+                <div
+                  class="rounded-xl border bg-card text-card-foreground shadow-sm"
+                >
                   <div class="flex flex-col space-y-1.5 p-6">
-                    <h3 class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2">
-                      <i data-lucide="gamepad-2" class="w-5 h-5 text-primary"></i>Spotlight: Video Game Terrain
+                    <h3
+                      class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2"
+                    >
+                      <i
+                        data-lucide="gamepad-2"
+                        class="w-5 h-5 text-primary"
+                      ></i>
+                      Spotlight: Video Game Terrain
                     </h3>
                   </div>
                   <div class="p-6 pt-0 text-sm text-muted-foreground space-y-4">
-                    <p>A 2-D side-scroller needs a <em>hill</em>. An artist defines a few height samples
-                      \((x_0,h_0),\ldots,(x_n,h_n)\). Newton's method builds \(P_n(x)\) through those samples;
-                      the game evaluates it thousands of times per second to determine ground height at any position.</p>
-                    <div class="rounded-md bg-muted/60 border p-4 space-y-2 text-xs">
-                      <p class="font-semibold text-foreground text-sm">Mini Example — 3-point terrain</p>
-                      <p>Control points: \((0,2),\;(3,5),\;(6,1)\)</p>
-                      <div class="overflow-x-auto mj-container space-y-1">
-                        <p>\[f[x_0,x_1]=\tfrac{5-2}{3-0}=1,\quad f[x_1,x_2]=\tfrac{1-5}{6-3}=-\tfrac{4}{3}\]</p>
-                        <p>\[f[x_0,x_1,x_2]=\tfrac{-\frac{4}{3}-1}{6-0}=-\tfrac{7}{18}\]</p>
-                        <p class="text-primary font-medium">\[P_2(x)=-\tfrac{7}{18}x^2+\tfrac{5}{2}x+2\]</p>
+                    <p>
+                      A 2-D side-scrolling game needs a <em>hill</em>. An artist
+                      defines a handful of <em>height samples</em>
+                      \((x_0, h_0), (x_1, h_1), \ldots, (x_n, h_n)\) — a few
+                      dozen values at most. Newton's method builds the unique
+                      polynomial \(P_n(x)\) through those samples; the game then
+                      evaluates \(P_n(x)\) thousands of times per second to
+                      determine the ground height at any horizontal position.
+                    </p>
+
+                    <!-- Mini worked example -->
+                    <div
+                      class="rounded-md bg-muted/60 border p-4 space-y-3 text-xs"
+                    >
+                      <p class="font-semibold text-foreground text-sm">
+                        Mini Example — 3-point terrain
+                      </p>
+                      <p>Control points: \((0,\,2),\;(3,\,5),\;(6,\,1)\)</p>
+
+                      <div class="space-y-1 overflow-x-auto mj-container">
+                        <p>
+                          \[f[x_0] = 2, \quad f[x_1] = 5, \quad f[x_2] = 1\]
+                        </p>
+                        <p>
+                          \[f[x_0,x_1] = \frac{5-2}{3-0} = 1, \quad f[x_1,x_2] =
+                          \frac{1-5}{6-3} = -\tfrac{4}{3}\]
+                        </p>
+                        <p>
+                          \[f[x_0,x_1,x_2] = \frac{-\frac{4}{3}-1}{6-0} =
+                          -\frac{7}{18}\]
+                        </p>
+                        <p>
+                          \[P_2(x) = 2 + 1\cdot x +
+                          \left(-\tfrac{7}{18}\right)x(x-3)\]
+                        </p>
+                        <p class="text-primary font-medium">
+                          \[P_2(x) = -\tfrac{7}{18}x^2 + \tfrac{5}{2}x + 2\]
+                        </p>
                       </div>
+                      <p>
+                        The engine evaluates this at, say, \(x = 1.5\) to get
+                        the car's height: \(P_2(1.5) \approx 4.06\) — no artist
+                        input needed at that point.
+                      </p>
                     </div>
-                    <p class="text-xs italic">Toggle <strong>Game Mode</strong> in the Calculate tab to drive a car over an interpolated hill!</p>
+
+                    <p class="text-xs italic">
+                      This application is visualised live in the
+                      <strong>Calculate &amp; Visualize</strong> tab — toggle
+                      <em>Game Mode</em> to drive a car over an interpolated
+                      hill!
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <!-- Data Input Guidelines -->
-              <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
+              <!-- Row 3 — Data Input Guidelines (original, preserved) -->
+              <div
+                class="rounded-xl border bg-card text-card-foreground shadow-sm"
+              >
                 <div class="flex flex-col space-y-1.5 p-6">
-                  <h3 class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2">
-                    <i data-lucide="file-digit" class="w-5 h-5 text-primary"></i>Data Input Guidelines
+                  <h3
+                    class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2"
+                  >
+                    <i
+                      data-lucide="file-digit"
+                      class="w-5 h-5 text-primary"
+                    ></i>
+                    Data Input Guidelines
                   </h3>
-                  <p class="text-sm text-muted-foreground">Properly format your coordinates and inputs for the interactive data table.</p>
+                  <p class="text-sm text-muted-foreground">
+                    Properly format your coordinates and inputs for the
+                    interactive data table.
+                  </p>
                 </div>
                 <div class="p-6 pt-0">
                   <div class="relative w-full overflow-auto rounded-md border">
                     <table class="w-full caption-bottom text-sm">
                       <thead class="[&_tr]:border-b bg-muted/50">
-                        <tr class="border-b transition-colors hover:bg-muted/50">
-                          <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-1/3">Guideline</th>
-                          <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Description</th>
+                        <tr
+                          class="border-b transition-colors hover:bg-muted/50"
+                        >
+                          <th
+                            class="h-12 px-4 text-left align-middle font-medium text-muted-foreground w-1/3"
+                          >
+                            Guideline
+                          </th>
+                          <th
+                            class="h-12 px-4 text-left align-middle font-medium text-muted-foreground"
+                          >
+                            Description
+                          </th>
                         </tr>
                       </thead>
                       <tbody class="[&_tr:last-child]:border-0">
-                        <tr class="border-b transition-colors hover:bg-muted/50">
-                          <td class="p-4 align-middle font-medium">Distinct \(X\) Values</td>
-                          <td class="p-4 align-middle text-muted-foreground">All \(X\) coordinates must be unique: \(x_i\neq x_j\) for \(i\neq j\). Divided differences require non-zero denominators.</td>
+                        <tr
+                          class="border-b transition-colors hover:bg-muted/50"
+                        >
+                          <td class="p-4 align-middle font-medium">
+                            Distinct \(X\) Values
+                          </td>
+                          <td class="p-4 align-middle text-muted-foreground">
+                            All \(X\) coordinates must be unique: \(x_i \neq
+                            x_j\) for \(i \neq j\). Divided differences require
+                            non-zero denominators (\(x_j - x_i \neq 0\)).
+                          </td>
                         </tr>
-                        <tr class="border-b transition-colors hover:bg-muted/50">
-                          <td class="p-4 align-middle font-medium">Numerical Constants</td>
-                          <td class="p-4 align-middle text-muted-foreground">Inputs should be resolved numerical constants (e.g., <code class="font-mono text-primary bg-muted px-1 py-0.5 rounded">2.5</code>).</td>
+                        <tr
+                          class="border-b transition-colors hover:bg-muted/50"
+                        >
+                          <td class="p-4 align-middle font-medium">
+                            Numerical Constants
+                          </td>
+                          <td class="p-4 align-middle text-muted-foreground">
+                            Inputs should be resolved numerical constants (e.g.,
+                            <code
+                              class="font-mono text-primary bg-muted px-1 py-0.5 rounded"
+                              >2.5</code
+                            >).
+                          </td>
                         </tr>
-                        <tr class="border-b transition-colors hover:bg-muted/50">
-                          <td class="p-4 align-middle font-medium">Function Sampling</td>
-                          <td class="p-4 align-middle text-muted-foreground">To interpolate a function like \(\sin(x)\), manually sample discrete points and input them.</td>
+                        <tr
+                          class="border-b transition-colors hover:bg-muted/50"
+                        >
+                          <td class="p-4 align-middle font-medium">
+                            Function Sampling
+                          </td>
+                          <td class="p-4 align-middle text-muted-foreground">
+                            To interpolate a specific function like \(\sin(x)\),
+                            manually sample discrete points and input them.
+                          </td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
                 </div>
               </div>
+            </div>
+            <!-- /intro tab -->
 
-            </div><!-- /intro -->
-
-            <!-- ═══════════════════════ CALCULATE TAB ═══════════════════════ -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- CALCULATE TAB                                              -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
             <div id="calculate" class="tab-content hidden">
               <div class="grid grid-cols-1 lg:grid-cols-[350px_1fr] gap-6">
-
                 <!-- Left Panel -->
                 <div class="flex flex-col gap-6 pr-2 pb-4">
-                  <div class="rounded-xl border bg-card text-card-foreground shadow-sm">
+                  <div
+                    class="rounded-xl border bg-card text-card-foreground shadow-sm"
+                  >
                     <div class="flex flex-col space-y-1.5 p-6 border-b">
-                      <h3 class="text-lg font-semibold leading-none tracking-tight">Calculator Inputs</h3>
+                      <h3
+                        class="text-lg font-semibold leading-none tracking-tight"
+                      >
+                        Calculator Inputs
+                      </h3>
                     </div>
                     <div class="p-6 space-y-4">
                       <div>
                         <div class="flex items-center justify-between mb-2">
-                          <label class="text-sm font-medium leading-none">Data Points</label>
+                          <label class="text-sm font-medium leading-none"
+                            >Data Points</label
+                          >
                           <div class="flex items-center space-x-2">
-                            <label class="text-[11px] font-semibold tracking-wide uppercase text-muted-foreground">Auto-calc</label>
-                            <button id="auto-calc-switch"
+                            <label
+                              class="text-[11px] font-semibold tracking-wide uppercase text-muted-foreground"
+                              >Auto-calc</label
+                            >
+                            <button
+                              id="auto-calc-switch"
                               class="relative inline-flex h-4 w-7 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors bg-primary"
-                              role="switch" aria-checked="true" onclick="toggleAutoCalc(this)">
-                              <span class="pointer-events-none block h-3 w-3 rounded-full bg-background shadow-lg ring-0 transition-transform translate-x-3"></span>
+                              role="switch"
+                              aria-checked="true"
+                              onclick="toggleAutoCalc(this)"
+                            >
+                              <span
+                                class="pointer-events-none block h-3 w-3 rounded-full bg-background shadow-lg ring-0 transition-transform translate-x-3"
+                              ></span>
                             </button>
                           </div>
                         </div>
                         <div id="data-points-container"></div>
-                        <button id="btn-add-data" onclick="addDataPoint()"
-                          class="w-full mt-2 flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors">
-                          <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i>Add Data Point
-                        </button>
+                        <div class="grid gap-2 mt-2">
+                          <button
+                            id="btn-paste-data"
+                            onclick="pasteDataPointsFromClipboard()"
+                            class="w-full inline-flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
+                          >
+                            <i
+                              data-lucide="clipboard"
+                              class="w-3.5 h-3.5 mr-1"
+                            ></i>
+                            Paste Data Points
+                          </button>
+                          <p class="text-[10px] text-muted-foreground px-1">
+                            Use the clipboard button to paste the first two
+                            columns from copied Excel rows.
+                          </p>
+                          <div class="grid gap-2">
+                            <input
+                              id="csv-upload-input"
+                              type="file"
+                              accept=".csv,text/csv"
+                              class="hidden"
+                              onchange="handleCsvUpload(event)"
+                            />
+                            <button
+                              id="btn-upload-csv"
+                              type="button"
+                              onclick="
+                                document
+                                  .getElementById('csv-upload-input')
+                                  .click()
+                              "
+                              class="w-full inline-flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
+                            >
+                              <i
+                                data-lucide="upload"
+                                class="w-3.5 h-3.5 mr-1"
+                              ></i>
+                              Upload CSV
+                            </button>
+                            <p class="text-[10px] text-muted-foreground px-1">
+                              Upload a CSV file with two columns. The first two
+                              columns will be used as X and Y values.
+                            </p>
+                          </div>
+                          <button
+                            id="btn-add-data"
+                            onclick="addDataPoint()"
+                            class="w-full inline-flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
+                          >
+                            <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i>
+                            Add Data Point
+                          </button>
+                        </div>
                       </div>
-                      <button id="calculate-btn" style="display:none"
+                      <button
+                        id="calculate-btn"
+                        style="display: none"
                         onclick="Shiny.setInputValue('calc_btn', Math.random())"
-                        class="inline-flex w-full items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 mt-4">
-                        <i data-lucide="play" class="w-4 h-4 mr-2"></i>Calculate
+                        class="inline-flex w-full items-center justify-center rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 mt-4"
+                      >
+                        <i data-lucide="play" class="w-4 h-4 mr-2"></i>
+                        Calculate
                       </button>
                     </div>
                   </div>
 
                   <!-- Results Card -->
-                  <div id="results-card" class="rounded-xl border bg-card text-card-foreground shadow-sm">
+                  <div
+                    id="results-card"
+                    class="rounded-xl border bg-card text-card-foreground shadow-sm"
+                  >
                     <div class="p-6 space-y-4">
-                      <div id="results-equation-container" style="display:none" class="space-y-3 mb-6">
+                      <div
+                        id="results-equation-container"
+                        style="display: none"
+                        class="space-y-3 mb-6"
+                      >
                         <div class="flex items-center justify-between">
-                          <p class="text-sm font-medium text-muted-foreground">Resulting Equation</p>
+                          <p class="text-sm font-medium text-muted-foreground">
+                            Resulting Equation
+                          </p>
                           <div class="flex items-center gap-2">
-                            <button id="btn-copy-eq-sidebar"
+                            <!-- Copy to clipboard button -->
+                            <button
+                              id="btn-copy-eq-sidebar"
                               class="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                              onclick="copyEquationToClipboard('sidebar')" title="Copy LaTeX to clipboard">
-                              <i data-lucide="clipboard" class="w-3 h-3"></i>Copy
+                              onclick="copyEquationToClipboard('sidebar')"
+                              title="Copy LaTeX to clipboard"
+                            >
+                              <i data-lucide="clipboard" class="w-3 h-3"></i>
+                              Copy
                             </button>
-                            <button class="text-xs text-primary hover:underline flex items-center gap-1" onclick="openEquationModal()">
-                              <i data-lucide="maximize-2" class="w-3 h-3"></i>View Full
+                            <button
+                              class="text-xs text-primary hover:underline flex items-center gap-1"
+                              onclick="openEquationModal()"
+                            >
+                              <i data-lucide="maximize-2" class="w-3 h-3"></i>
+                              View Full
                             </button>
                           </div>
                         </div>
-                        <div class="p-4 bg-muted/50 border border-border/50 rounded-md overflow-x-auto overflow-y-hidden whitespace-nowrap shadow-inner min-h-[64px] flex items-center justify-start px-4 mj-container">
-                          <span id="eq-sidebar-buf1" class="mj-buffer">\[P_n(x) = \dots\]</span>
-                          <span id="eq-sidebar-buf2" class="mj-buffer mj-hidden"></span>
+                        <div
+                          class="p-4 bg-muted/50 border border-border/50 rounded-md overflow-x-auto overflow-y-hidden whitespace-nowrap shadow-inner min-h-[64px] flex items-center justify-start px-4 mj-container"
+                        >
+                          <span id="eq-sidebar-buf1" class="mj-buffer"
+                            >\[P_n(x) = \dots\]</span
+                          >
+                          <span
+                            id="eq-sidebar-buf2"
+                            class="mj-buffer mj-hidden"
+                          ></span>
                         </div>
                       </div>
-                      <h3 class="font-semibold leading-none tracking-tight">Live Interpolation</h3>
+                      <h3 class="font-semibold leading-none tracking-tight">
+                        Live Interpolation
+                      </h3>
                       <div id="interp-points-container"></div>
-                      <button id="btn-add-interp" onclick="addInterpPoint()"
-                        class="w-full mt-2 flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors">
-                        <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i>Add Interpolation Point
+                      <div class="grid gap-2 mt-2">
+                        <button
+                          id="btn-paste-interp"
+                          onclick="pasteInterpXFromClipboard()"
+                          class="w-full inline-flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
+                        >
+                          <i
+                            data-lucide="clipboard"
+                            class="w-3.5 h-3.5 mr-1"
+                          ></i>
+                          Paste Eval X
+                        </button>
+                        <p class="text-[10px] text-muted-foreground px-1">
+                          Paste a single column of X values from copied cells.
+                        </p>
+                        <div class="grid gap-2">
+                          <input
+                            id="csv-upload-interp-input"
+                            type="file"
+                            accept=".csv,text/csv"
+                            class="hidden"
+                            onchange="handleInterpCsvUpload(event)"
+                          />
+                          <button
+                            id="btn-upload-interp-csv"
+                            type="button"
+                            onclick="
+                              document
+                                .getElementById('csv-upload-interp-input')
+                                .click()
+                            "
+                            class="w-full inline-flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
+                          >
+                            <i
+                              data-lucide="upload"
+                              class="w-3.5 h-3.5 mr-1"
+                            ></i>
+                            Upload CSV
+                          </button>
+                          <p class="text-[10px] text-muted-foreground px-1">
+                            Upload a CSV file. The first column will be used as
+                            Eval X values.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        id="btn-add-interp"
+                        onclick="addInterpPoint()"
+                        class="w-full mt-2 flex items-center justify-center text-xs text-muted-foreground hover:text-foreground py-2 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
+                      >
+                        <i data-lucide="plus" class="w-3.5 h-3.5 mr-1"></i> Add
+                        Interpolation Point
                       </button>
                     </div>
                   </div>
                 </div>
 
                 <!-- Right Panel -->
-                <div class="rounded-xl border bg-card text-card-foreground shadow-sm flex flex-col overflow-hidden">
+                <div
+                  class="rounded-xl border bg-card text-card-foreground shadow-sm flex flex-col overflow-hidden"
+                >
                   <div class="flex flex-col space-y-1.5 p-4 border-b shrink-0">
-                    <div class="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-max">
-                      <button class="sub-tab-btn active inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                        data-state="active" onclick="switchSubTab('plot', this)">
-                        <i data-lucide="line-chart" class="w-4 h-4 mr-2"></i>Plot
+                    <div
+                      class="inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-max"
+                    >
+                      <button
+                        class="sub-tab-btn active inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        data-state="active"
+                        onclick="switchSubTab('plot', this)"
+                      >
+                        <i data-lucide="line-chart" class="w-4 h-4 mr-2"></i>
+                        Plot
                       </button>
-                      <button class="sub-tab-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                        data-state="inactive" onclick="switchSubTab('steps', this)">
-                        <i data-lucide="list-ordered" class="w-4 h-4 mr-2"></i>Steps
+                      <button
+                        class="sub-tab-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        data-state="inactive"
+                        onclick="switchSubTab('steps', this)"
+                      >
+                        <i data-lucide="list-ordered" class="w-4 h-4 mr-2"></i>
+                        Steps
                       </button>
-                      <button class="sub-tab-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-                        data-state="inactive" onclick="switchSubTab('table', this)">
-                        <i data-lucide="table" class="w-4 h-4 mr-2"></i>Table
+                      <button
+                        class="sub-tab-btn inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+                        data-state="inactive"
+                        onclick="switchSubTab('table', this)"
+                      >
+                        <i data-lucide="table" class="w-4 h-4 mr-2"></i> Table
                       </button>
                     </div>
                   </div>
 
                   <div id="sub-tabs-root" class="p-4 flex-1 flex flex-col">
-
-                    <!-- Plot Sub-tab -->
-                    <div id="plot" class="sub-tab-content active flex flex-col flex-1 min-h-[500px] relative">
-                      <div class="mb-4 bg-card border rounded-lg p-4 shadow-sm relative shrink-0">
+                    <!-- Plot Tab -->
+                    <div
+                      id="plot"
+                      class="sub-tab-content active flex flex-col flex-1 min-h-[500px] relative"
+                    >
+                      <div
+                        class="mb-4 bg-card border rounded-lg p-4 shadow-sm relative shrink-0"
+                      >
                         <div class="flex items-center justify-between mb-3">
-                          <p class="text-sm font-medium text-muted-foreground">Generated Equation</p>
+                          <p class="text-sm font-medium text-muted-foreground">
+                            Generated Equation
+                          </p>
                           <div class="flex items-center gap-3">
-                            <button id="btn-copy-eq-plot"
+                            <!-- Copy button (plot tab) -->
+                            <button
+                              id="btn-copy-eq-plot"
                               class="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                              onclick="copyEquationToClipboard('plot')" title="Copy LaTeX to clipboard">
-                              <i data-lucide="clipboard" class="w-3 h-3"></i>Copy
+                              onclick="copyEquationToClipboard('plot')"
+                              title="Copy LaTeX to clipboard"
+                            >
+                              <i data-lucide="clipboard" class="w-3 h-3"></i>
+                              Copy
                             </button>
-                            <button class="text-xs text-primary hover:underline flex items-center gap-1" onclick="openEquationModal()">
-                              <i data-lucide="maximize-2" class="w-3 h-3"></i>View Full
+                            <button
+                              class="text-xs text-primary hover:underline flex items-center gap-1"
+                              onclick="openEquationModal()"
+                            >
+                              <i data-lucide="maximize-2" class="w-3 h-3"></i>
+                              View Full
                             </button>
                           </div>
                         </div>
-                        <div class="w-full bg-muted/50 border rounded-md p-4 overflow-x-auto whitespace-nowrap mj-container flex items-center justify-start px-4">
-                          <span id="eq-plot-buf1" class="mj-buffer">\[P_n(x) = \dots\]</span>
-                          <span id="eq-plot-buf2" class="mj-buffer mj-hidden"></span>
+                        <div
+                          class="w-full bg-muted/50 border rounded-md p-4 overflow-x-auto whitespace-nowrap mj-container flex items-center justify-start px-4"
+                        >
+                          <span id="eq-plot-buf1" class="mj-buffer"
+                            >\[P_n(x) = \dots\]</span
+                          >
+                          <span
+                            id="eq-plot-buf2"
+                            class="mj-buffer mj-hidden"
+                          ></span>
                         </div>
                       </div>
                       <div class="flex-1 min-h-[400px]">
-                        <div id="chart-card" class="rounded-xl border bg-card shadow-sm relative h-full">
-
+                        <div
+                          id="chart-card"
+                          class="rounded-xl border bg-card shadow-sm relative h-full"
+                        >
                           <!-- Controls Overlay -->
-                          <div class="absolute top-4 right-4 z-[100] flex items-center gap-2">
+                          <div
+                            class="absolute top-4 right-4 z-[100] flex items-center gap-2"
+                          >
                             <div class="tooltip-container">
-                              <button id="btn-nerd-mode-toggle" onclick="toggleNerdMode(!nerdOpen);this.blur();"
-                                class="hidden p-2 bg-background/95 backdrop-blur border shadow-md rounded-md text-muted-foreground hover:text-foreground transition-colors outline-none">
+                              <button
+                                id="btn-nerd-mode-toggle"
+                                onclick="
+                                  toggleNerdMode(!nerdOpen);
+                                  this.blur();
+                                "
+                                class="hidden p-2 bg-background/95 backdrop-blur border shadow-md rounded-md text-muted-foreground hover:text-foreground transition-colors outline-none"
+                              >
                                 <i data-lucide="braces" class="w-4 h-4"></i>
                               </button>
                               <span class="tooltip-text">Debug Formulas</span>
                             </div>
+
                             <div class="tooltip-container">
-                              <button id="btn-game-mode-toggle" onclick="toggleGameMode();this.blur();"
-                                class="p-2 bg-background/95 backdrop-blur border shadow-md rounded-md text-muted-foreground hover:text-foreground transition-colors outline-none">
+                              <button
+                                id="btn-game-mode-toggle"
+                                onclick="
+                                  toggleGameMode();
+                                  this.blur();
+                                "
+                                class="p-2 bg-background/95 backdrop-blur border shadow-md rounded-md text-muted-foreground hover:text-foreground transition-colors outline-none"
+                              >
                                 <i data-lucide="gamepad-2" class="w-4 h-4"></i>
                               </button>
                               <span class="tooltip-text">Toggle Game Mode</span>
                             </div>
-                            <div id="regen-tool-container" class="tooltip-container">
-                              <button id="btn-regenerate-points" onclick="randomizePoints();this.blur();"
-                                class="p-2 bg-background/95 backdrop-blur border shadow-md rounded-md text-muted-foreground hover:text-foreground transition-colors outline-none">
+
+                            <div
+                              id="regen-tool-container"
+                              class="tooltip-container"
+                            >
+                              <button
+                                id="btn-regenerate-points"
+                                onclick="
+                                  randomizePoints();
+                                  this.blur();
+                                "
+                                class="p-2 bg-background/95 backdrop-blur border shadow-md rounded-md text-muted-foreground hover:text-foreground transition-colors outline-none"
+                              >
                                 <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                               </button>
-                              <span class="tooltip-text">Regenerate Points</span>
+                              <span class="tooltip-text"
+                                >Regenerate Points</span
+                              >
                             </div>
+
                             <div class="tooltip-container">
-                              <button onclick="toggleSettingsDropdown();this.blur();"
-                                class="p-2 bg-background/95 backdrop-blur border shadow-md rounded-md text-muted-foreground hover:text-foreground transition-colors outline-none">
+                              <button
+                                onclick="
+                                  toggleSettingsDropdown();
+                                  this.blur();
+                                "
+                                class="p-2 bg-background/95 backdrop-blur border shadow-md rounded-md text-muted-foreground hover:text-foreground transition-colors outline-none"
+                              >
                                 <i data-lucide="settings" class="w-4 h-4"></i>
                               </button>
                               <span class="tooltip-text">Display Settings</span>
                             </div>
 
-                            <div id="settings-dropdown" class="absolute right-0 mt-2 w-64 p-2 bg-popover text-popover-foreground border shadow-lg rounded-lg hidden z-50">
+                            <div
+                              id="settings-dropdown"
+                              class="absolute right-0 mt-2 w-64 p-2 bg-popover text-popover-foreground border shadow-lg rounded-lg hidden z-50"
+                            >
                               <div class="space-y-1">
-                                <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Display Options</div>
-                                <label class="flex items-center gap-2.5 px-2 py-2 hover:bg-muted rounded-md cursor-pointer text-sm transition-colors">
-                                  <input type="checkbox" id="chk-show-pts" class="rounded border-input text-primary focus:ring-primary w-4 h-4" checked />
+                                <div
+                                  class="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                                >
+                                  Display Options
+                                </div>
+                                <label
+                                  class="flex items-center gap-2.5 px-2 py-2 hover:bg-muted rounded-md cursor-pointer text-sm transition-colors"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    id="chk-show-pts"
+                                    class="rounded border-input text-primary focus:ring-primary w-4 h-4"
+                                    checked
+                                  />
                                   <span>Show Data Points</span>
                                 </label>
-                                <label class="flex items-center gap-2.5 px-2 py-2 hover:bg-muted rounded-md cursor-pointer text-sm transition-colors">
-                                  <input type="checkbox" id="chk-drag-pts" class="rounded border-input text-primary focus:ring-primary w-4 h-4" />
+                                <label
+                                  class="flex items-center gap-2.5 px-2 py-2 hover:bg-muted rounded-md cursor-pointer text-sm transition-colors"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    id="chk-drag-pts"
+                                    class="rounded border-input text-primary focus:ring-primary w-4 h-4"
+                                  />
                                   <span>Draggable Points</span>
                                 </label>
                                 <div class="h-px bg-border my-1.5"></div>
-                                <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Animation</div>
-                                <label class="flex items-center gap-2.5 px-2 py-2 hover:bg-muted rounded-md cursor-pointer text-sm transition-colors">
-                                  <input type="checkbox" id="chk-playing" class="rounded border-input text-primary focus:ring-primary w-4 h-4" checked onchange="toggleAnimation()" />
+                                <div
+                                  class="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider"
+                                >
+                                  Animation
+                                </div>
+                                <label
+                                  class="flex items-center gap-2.5 px-2 py-2 hover:bg-muted rounded-md cursor-pointer text-sm transition-colors"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    id="chk-playing"
+                                    class="rounded border-input text-primary focus:ring-primary w-4 h-4"
+                                    checked
+                                    onchange="toggleAnimation()"
+                                  />
                                   <span>Playing</span>
                                 </label>
                                 <div class="px-2 py-2">
-                                  <div class="flex items-center justify-between mb-1.5">
+                                  <div
+                                    class="flex items-center justify-between mb-1.5"
+                                  >
                                     <span class="text-sm">Speed</span>
-                                    <span id="speed-val" class="text-xs font-mono text-muted-foreground">1.0x</span>
+                                    <span
+                                      id="speed-val"
+                                      class="text-xs font-mono text-muted-foreground"
+                                      >1.0x</span
+                                    >
                                   </div>
-                                  <input type="range" id="range-speed" min="0.1" max="3" step="0.1" value="1"
+                                  <input
+                                    type="range"
+                                    id="range-speed"
+                                    min="0.1"
+                                    max="3"
+                                    step="0.1"
+                                    value="1"
                                     class="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                                    oninput="document.getElementById('speed-val').innerText=parseFloat(this.value).toFixed(1)+'x';updateSpeed(this.value);" />
+                                    oninput="
+                                      document.getElementById(
+                                        'speed-val',
+                                      ).innerText =
+                                        parseFloat(this.value).toFixed(1) + 'x';
+                                      updateSpeed(this.value);
+                                    "
+                                  />
                                 </div>
+
                                 <div id="hill-challenge-section" class="hidden">
                                   <div class="h-px bg-border my-1.5"></div>
-                                  <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                                    <i data-lucide="mountain" class="w-3.5 h-3.5"></i>Hill Challenge
+                                  <div
+                                    class="px-2 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"
+                                  >
+                                    <i
+                                      data-lucide="mountain"
+                                      class="w-3.5 h-3.5"
+                                    ></i>
+                                    Hill Challenge
                                   </div>
-                                  <label class="flex items-center gap-2.5 px-2 py-2 hover:bg-muted rounded-md cursor-pointer text-sm transition-colors">
-                                    <input type="checkbox" id="chk-sine-hill" class="rounded border-input text-primary focus:ring-primary w-4 h-4" onchange="toggleSineHillMode(this.checked)" />
+                                  <label
+                                    class="flex items-center gap-2.5 px-2 py-2 hover:bg-muted rounded-md cursor-pointer text-sm transition-colors"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      id="chk-sine-hill"
+                                      class="rounded border-input text-primary focus:ring-primary w-4 h-4"
+                                      onchange="
+                                        toggleSineHillMode(this.checked)
+                                      "
+                                    />
                                     <span>Auto Sine Hills</span>
                                   </label>
-                                  <div id="hill-controls" class="hidden px-2 py-1 space-y-3">
+                                  <div
+                                    id="hill-controls"
+                                    class="hidden px-2 py-1 space-y-3"
+                                  >
                                     <div>
-                                      <div class="flex justify-between text-xs mb-1"><span>Amplitude (A)</span><span id="val-amplitude" class="font-mono text-muted-foreground">3.0</span></div>
-                                      <input type="range" id="range-amplitude" min="0.5" max="8" step="0.5" value="3" class="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                                        oninput="hillAmplitude=parseFloat(this.value);document.getElementById('val-amplitude').textContent=hillAmplitude.toFixed(1);rebuildHillTerrain();" />
+                                      <div
+                                        class="flex justify-between text-xs mb-1"
+                                      >
+                                        <span>Amplitude (A)</span>
+                                        <span
+                                          id="val-amplitude"
+                                          class="font-mono text-muted-foreground"
+                                          >3.0</span
+                                        >
+                                      </div>
+                                      <input
+                                        type="range"
+                                        id="range-amplitude"
+                                        min="0.5"
+                                        max="8"
+                                        step="0.5"
+                                        value="3"
+                                        class="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                                        oninput="
+                                          hillAmplitude = parseFloat(
+                                            this.value,
+                                          );
+                                          document.getElementById(
+                                            'val-amplitude',
+                                          ).textContent =
+                                            hillAmplitude.toFixed(1);
+                                          rebuildHillTerrain();
+                                        "
+                                      />
                                     </div>
                                     <div>
-                                      <div class="flex justify-between text-xs mb-1"><span>Frequency (&#x03C9;)</span><span id="val-frequency" class="font-mono text-muted-foreground">1.0</span></div>
-                                      <input type="range" id="range-frequency" min="0.5" max="4" step="0.5" value="1" class="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                                        oninput="hillFrequency=parseFloat(this.value);document.getElementById('val-frequency').textContent=hillFrequency.toFixed(1);rebuildHillTerrain();" />
+                                      <div
+                                        class="flex justify-between text-xs mb-1"
+                                      >
+                                        <span>Frequency (&#x03C9;)</span>
+                                        <span
+                                          id="val-frequency"
+                                          class="font-mono text-muted-foreground"
+                                          >1.0</span
+                                        >
+                                      </div>
+                                      <input
+                                        type="range"
+                                        id="range-frequency"
+                                        min="0.5"
+                                        max="4"
+                                        step="0.5"
+                                        value="1"
+                                        class="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                                        oninput="
+                                          hillFrequency = parseFloat(
+                                            this.value,
+                                          );
+                                          document.getElementById(
+                                            'val-frequency',
+                                          ).textContent =
+                                            hillFrequency.toFixed(1);
+                                          rebuildHillTerrain();
+                                        "
+                                      />
                                     </div>
                                     <div>
-                                      <div class="flex justify-between text-xs mb-1"><span>Control Points (n)</span><span id="val-numpts" class="font-mono text-muted-foreground">7</span></div>
-                                      <input type="range" id="range-numpts" min="3" max="12" step="1" value="7" class="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                                        oninput="hillNumPoints=parseInt(this.value);document.getElementById('val-numpts').textContent=hillNumPoints;rebuildHillTerrain();" />
+                                      <div
+                                        class="flex justify-between text-xs mb-1"
+                                      >
+                                        <span>Control Points (n)</span>
+                                        <span
+                                          id="val-numpts"
+                                          class="font-mono text-muted-foreground"
+                                          >7</span
+                                        >
+                                      </div>
+                                      <input
+                                        type="range"
+                                        id="range-numpts"
+                                        min="3"
+                                        max="12"
+                                        step="1"
+                                        value="7"
+                                        class="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                                        oninput="
+                                          hillNumPoints = parseInt(this.value);
+                                          document.getElementById(
+                                            'val-numpts',
+                                          ).textContent = hillNumPoints;
+                                          rebuildHillTerrain();
+                                        "
+                                      />
                                     </div>
                                     <div>
-                                      <div class="flex justify-between text-xs mb-1"><span>Baseline (b)</span><span id="val-baseline" class="font-mono text-muted-foreground">5.0</span></div>
-                                      <input type="range" id="range-baseline" min="1" max="10" step="0.5" value="5" class="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
-                                        oninput="hillBaseline=parseFloat(this.value);document.getElementById('val-baseline').textContent=hillBaseline.toFixed(1);rebuildHillTerrain();" />
+                                      <div
+                                        class="flex justify-between text-xs mb-1"
+                                      >
+                                        <span>Baseline (b)</span>
+                                        <span
+                                          id="val-baseline"
+                                          class="font-mono text-muted-foreground"
+                                          >5.0</span
+                                        >
+                                      </div>
+                                      <input
+                                        type="range"
+                                        id="range-baseline"
+                                        min="1"
+                                        max="10"
+                                        step="0.5"
+                                        value="5"
+                                        class="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                                        oninput="
+                                          hillBaseline = parseFloat(this.value);
+                                          document.getElementById(
+                                            'val-baseline',
+                                          ).textContent =
+                                            hillBaseline.toFixed(1);
+                                          rebuildHillTerrain();
+                                        "
+                                      />
                                     </div>
-                                    <button onclick="randomizeHill()" class="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground py-1.5 border border-dashed rounded-md hover:bg-muted/50 transition-colors">
-                                      <i data-lucide="shuffle" class="w-3 h-3"></i>Randomize Terrain
+                                    <button
+                                      onclick="randomizeHill()"
+                                      class="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:text-foreground py-1.5 border border-dashed rounded-md hover:bg-muted/50 transition-colors"
+                                    >
+                                      <i
+                                        data-lucide="shuffle"
+                                        class="w-3 h-3"
+                                      ></i>
+                                      Randomize Terrain
                                     </button>
                                   </div>
                                 </div>
@@ -450,85 +1174,338 @@
                           </div>
 
                           <!-- Canvas -->
-                          <div class="absolute inset-0 rounded-xl overflow-hidden pointer-events-none">
-                            <canvas id="animation-canvas" class="w-full h-full pointer-events-auto"></canvas>
+                          <div
+                            class="absolute inset-0 rounded-xl overflow-hidden pointer-events-none"
+                          >
+                            <canvas
+                              id="animation-canvas"
+                              class="w-full h-full pointer-events-auto"
+                            ></canvas>
                           </div>
 
                           <!-- Game Indicators -->
-                          <div id="game-indicators" class="absolute top-3 left-3 hidden group z-[60]">
+                          <div
+                            id="game-indicators"
+                            class="absolute top-3 left-3 hidden group z-[60]"
+                          >
                             <div class="flex items-center gap-2 relative">
                               <div class="flex gap-2">
-                                <div id="ind-left" class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center font-bold text-muted-foreground shadow-md transition-all cursor-pointer select-none active:scale-95"
-                                  onmousedown="engineKeys.left=true;updateEngineDirection();" onmouseup="engineKeys.left=false;updateEngineDirection();" onmouseleave="engineKeys.left=false;updateEngineDirection();">A</div>
-                                <div id="ind-right" class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center font-bold text-muted-foreground shadow-md transition-all cursor-pointer select-none active:scale-95"
-                                  onmousedown="engineKeys.right=true;updateEngineDirection();" onmouseup="engineKeys.right=false;updateEngineDirection();" onmouseleave="engineKeys.right=false;updateEngineDirection();">D</div>
+                                <div
+                                  id="ind-left"
+                                  class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center font-bold text-muted-foreground shadow-md transition-all cursor-pointer select-none active:scale-95"
+                                  onmousedown="
+                                    engineKeys.left = true;
+                                    updateEngineDirection();
+                                  "
+                                  onmouseup="
+                                    engineKeys.left = false;
+                                    updateEngineDirection();
+                                  "
+                                  onmouseleave="
+                                    engineKeys.left = false;
+                                    updateEngineDirection();
+                                  "
+                                >
+                                  A
+                                </div>
+                                <div
+                                  id="ind-right"
+                                  class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center font-bold text-muted-foreground shadow-md transition-all cursor-pointer select-none active:scale-95"
+                                  onmousedown="
+                                    engineKeys.right = true;
+                                    updateEngineDirection();
+                                  "
+                                  onmouseup="
+                                    engineKeys.right = false;
+                                    updateEngineDirection();
+                                  "
+                                  onmouseleave="
+                                    engineKeys.right = false;
+                                    updateEngineDirection();
+                                  "
+                                >
+                                  D
+                                </div>
                               </div>
-                              <div id="fuel-indicator-wrapper" class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center shadow-md relative overflow-hidden group/fuel">
-                                <div id="fuel-fill" class="absolute bottom-0 left-0 w-full bg-orange-500/80" style="height:100%"></div>
-                                <i data-lucide="fuel" class="w-5 h-5 text-foreground relative z-10"></i>
-                                <div class="absolute left-0 top-[110%] mt-1 whitespace-nowrap text-[11px] font-medium text-primary-foreground bg-primary/95 px-2 py-1 rounded shadow-md opacity-0 transition-opacity group-hover/fuel:opacity-100 pointer-events-none">
+                              <div
+                                id="fuel-indicator-wrapper"
+                                class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center shadow-md relative overflow-hidden group/fuel"
+                              >
+                                <div
+                                  id="fuel-fill"
+                                  class="absolute bottom-0 left-0 w-full bg-orange-500/80"
+                                  style="height: 100%"
+                                ></div>
+                                <i
+                                  data-lucide="fuel"
+                                  class="w-5 h-5 text-foreground relative z-10"
+                                ></i>
+                                <div
+                                  class="absolute left-0 top-[110%] mt-1 whitespace-nowrap text-[11px] font-medium text-primary-foreground bg-primary/95 px-2 py-1 rounded shadow-md opacity-0 transition-opacity group-hover/fuel:opacity-100 pointer-events-none"
+                                >
                                   Fuel: <span id="fuel-value">100</span>%
                                 </div>
                               </div>
-                              <button id="btn-restart" onclick="resetAnimation()"
-                                class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center text-muted-foreground hover:text-foreground shadow-md transition-all active:scale-95">
+                              <button
+                                id="btn-restart"
+                                onclick="resetAnimation()"
+                                class="w-10 h-10 rounded-md bg-background/95 backdrop-blur border-2 border-border flex items-center justify-center text-muted-foreground hover:text-foreground shadow-md transition-all active:scale-95"
+                              >
                                 <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
                               </button>
-                              <div class="absolute left-0 top-[110%] mt-1 whitespace-nowrap text-[11px] font-medium text-primary-foreground bg-primary/95 px-2 py-1 rounded shadow-md opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none">
+                              <div
+                                class="absolute left-0 top-[110%] mt-1 whitespace-nowrap text-[11px] font-medium text-primary-foreground bg-primary/95 px-2 py-1 rounded shadow-md opacity-0 transition-opacity group-hover:opacity-100 pointer-events-none"
+                              >
                                 Use A/D or Arrows to Drive
                               </div>
                             </div>
                           </div>
 
                           <!-- Game Status Overlay -->
-                          <div id="game-status-overlay" class="hidden absolute inset-0 z-[70] flex items-center justify-center pointer-events-none bg-black/40 backdrop-blur-[2px] transition-opacity duration-300">
-                            <div id="status-card" class="bg-card/95 backdrop-blur border shadow-2xl rounded-2xl p-8 text-center scale-90 opacity-0 transition-all duration-500 pointer-events-auto max-w-[300px]">
-                              <div id="status-icon-container" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <i id="status-icon" data-lucide="trophy" class="w-10 h-10"></i>
+                          <div
+                            id="game-status-overlay"
+                            class="hidden absolute inset-0 z-[70] flex items-center justify-center pointer-events-none bg-black/40 backdrop-blur-[2px] transition-opacity duration-300"
+                          >
+                            <div
+                              id="status-card"
+                              class="bg-card/95 backdrop-blur border shadow-2xl rounded-2xl p-8 text-center scale-90 opacity-0 transition-all duration-500 pointer-events-auto max-w-[300px]"
+                            >
+                              <div
+                                id="status-icon-container"
+                                class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+                              >
+                                <i
+                                  id="status-icon"
+                                  data-lucide="trophy"
+                                  class="w-10 h-10"
+                                ></i>
                               </div>
-                              <h2 id="status-title" class="text-2xl font-bold mb-2">You Win!</h2>
-                              <p id="status-desc" class="text-muted-foreground mb-6">Difficulty Level 1 Completed</p>
-                              <button id="status-btn" onclick="handleGameStatusAction()"
-                                class="w-full bg-primary text-primary-foreground py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors">Next Level</button>
+                              <h2
+                                id="status-title"
+                                class="text-2xl font-bold mb-2"
+                              >
+                                You Win!
+                              </h2>
+                              <p
+                                id="status-desc"
+                                class="text-muted-foreground mb-6"
+                              >
+                                Difficulty Level 1 Completed
+                              </p>
+                              <button
+                                id="status-btn"
+                                onclick="handleGameStatusAction()"
+                                class="w-full bg-primary text-primary-foreground py-2.5 rounded-lg font-medium hover:bg-primary/90 transition-colors"
+                              >
+                                Next Level
+                              </button>
                             </div>
                           </div>
 
-                          <!-- Mobile Controls -->
-                          <div id="mobile-controls" class="absolute bottom-8 left-4 right-4 flex justify-between z-20 pointer-events-none md:hidden hidden">
-                            <button id="btn-left" class="pointer-events-auto bg-background/95 backdrop-blur p-3 rounded-full shadow-md border active:bg-muted text-foreground transition-colors touch-manipulation">
+                          <!-- Mobile Game Controls -->
+                          <div
+                            id="mobile-controls"
+                            class="absolute bottom-8 left-4 right-4 flex justify-between z-20 pointer-events-none md:hidden hidden"
+                          >
+                            <button
+                              id="btn-left"
+                              class="pointer-events-auto bg-background/95 backdrop-blur p-3 rounded-full shadow-md border active:bg-muted text-foreground transition-colors touch-manipulation"
+                            >
                               <i data-lucide="arrow-left" class="w-6 h-6"></i>
                             </button>
-                            <button id="btn-right" class="pointer-events-auto bg-background/95 backdrop-blur p-3 rounded-full shadow-md border active:bg-muted text-foreground transition-colors touch-manipulation">
+                            <button
+                              id="btn-right"
+                              class="pointer-events-auto bg-background/95 backdrop-blur p-3 rounded-full shadow-md border active:bg-muted text-foreground transition-colors touch-manipulation"
+                            >
                               <i data-lucide="arrow-right" class="w-6 h-6"></i>
                             </button>
                           </div>
 
-                          <div id="drag-coord-tooltip" class="hidden absolute pointer-events-none bg-black/80 text-white text-xs font-mono px-2 py-1 rounded z-50" style="left:0;top:0"></div>
+                          <div
+                            id="drag-coord-tooltip"
+                            class="hidden absolute pointer-events-none bg-black/80 text-white text-xs font-mono px-2 py-1 rounded z-50"
+                            style="left: 0; top: 0"
+                          ></div>
 
-                          <aside id="nerd-panel" class="hidden absolute left-4 bottom-4 w-80 bg-card/95 backdrop-blur border rounded-lg shadow-lg p-3 z-40 text-sm space-y-1.5">
-                            <div id="nerd-panel-header" class="flex items-center justify-between mb-1 pb-1.5 border-b cursor-grab select-none active:cursor-grabbing">
-                              <span class="font-semibold text-foreground text-[11px] uppercase tracking-wider">Live Formulas</span>
-                              <button onclick="toggleNerdMode(false)" class="text-muted-foreground hover:text-foreground">
+                          <aside
+                            id="nerd-panel"
+                            class="hidden absolute left-4 bottom-4 w-80 bg-card/95 backdrop-blur border rounded-lg shadow-lg p-3 z-40 text-sm space-y-1.5"
+                          >
+                            <div
+                              id="nerd-panel-header"
+                              class="flex items-center justify-between mb-1 pb-1.5 border-b cursor-grab select-none active:cursor-grabbing"
+                            >
+                              <span
+                                class="font-semibold text-foreground text-[11px] uppercase tracking-wider"
+                                >Live Formulas</span
+                              >
+                              <button
+                                onclick="toggleNerdMode(false)"
+                                class="text-muted-foreground hover:text-foreground"
+                              >
                                 <i data-lucide="x" class="w-3.5 h-3.5"></i>
                               </button>
                             </div>
-                            <div class="grid grid-cols-[24px_1fr_auto] items-center gap-x-2 gap-y-1.5">
-                              <div></div><div class="text-muted-foreground text-xs">Position \(x\)</div><div id="nerd-cart" class="text-primary font-mono text-xs text-right">—</div>
-                              <div></div><div class="text-muted-foreground text-xs" id="nerd-lbl-px">Elevation \(P_n(x)\)</div><div id="nerd-px" class="text-primary font-mono text-xs text-right">—</div>
-                              <div></div><div class="text-muted-foreground text-xs" id="nerd-lbl-slope-math">Slope \(P_n'(x)\)</div><div id="nerd-slope-math" class="text-primary font-mono text-xs text-right">—</div>
-                              <div></div><div class="text-muted-foreground text-xs" id="nerd-lbl-slope">Incline \(\theta=\arctan(P_n'(x))\)</div><div id="nerd-slope" class="text-primary font-mono text-xs text-right">—</div>
-                              <div class="flex justify-center"><input type="checkbox" checked onchange="showVelVector=this.checked;if(myChart)myChart.update('none');" class="w-3 h-3 rounded border-input text-primary focus:ring-primary" /></div>
-                              <div class="text-muted-foreground text-xs">Velocity \(\vec{v}\)</div><div id="nerd-vel" class="text-primary font-mono text-xs text-right">—</div>
-                              <div class="flex justify-center"><input type="checkbox" checked onchange="showGravVector=this.checked;if(myChart)myChart.update('none');" class="w-3 h-3 rounded border-input text-primary focus:ring-primary" /></div>
-                              <div class="text-muted-foreground text-xs">Gravity \(\vec{a}_{\text{grav}}\)</div><div id="nerd-grav" class="text-primary font-mono text-xs text-right">—</div>
-                              <div class="flex justify-center"><input type="checkbox" checked onchange="showEngVector=this.checked;if(myChart)myChart.update('none');" class="w-3 h-3 rounded border-input text-primary focus:ring-primary" /></div>
-                              <div class="text-muted-foreground text-xs">Engine \(\vec{a}_{\text{eng}}\)</div><div id="nerd-eng" class="text-primary font-mono text-xs text-right">—</div>
-                              <div class="flex justify-center"><input type="checkbox" checked onchange="showDragVector=this.checked;if(myChart)myChart.update('none');" class="w-3 h-3 rounded border-input text-primary focus:ring-primary" /></div>
-                              <div class="text-muted-foreground text-xs">Drag \(\vec{a}_{\text{drag}}\)</div><div id="nerd-drag-val" class="text-primary font-mono text-xs text-right">—</div>
-                              <div></div><div class="text-muted-foreground text-xs">Delta \(\Delta t\)</div><div id="nerd-dt" class="text-primary font-mono text-xs text-right">—</div>
+                            <div
+                              class="grid grid-cols-[24px_1fr_auto] items-center gap-x-2 gap-y-1.5"
+                            >
+                              <div></div>
+                              <div class="text-muted-foreground text-xs">
+                                Position \(x\)
+                              </div>
+                              <div
+                                id="nerd-cart"
+                                class="text-primary font-mono text-xs text-right"
+                              >
+                                —
+                              </div>
+
+                              <div></div>
+                              <div
+                                class="text-muted-foreground text-xs"
+                                id="nerd-lbl-px"
+                                data-n="n"
+                              >
+                                Elevation \(P_n(x)\)
+                              </div>
+                              <div
+                                id="nerd-px"
+                                class="text-primary font-mono text-xs text-right"
+                              >
+                                —
+                              </div>
+
+                              <div></div>
+                              <div
+                                class="text-muted-foreground text-xs"
+                                id="nerd-lbl-slope-math"
+                                data-n="n"
+                              >
+                                Slope \(P_n'(x)\)
+                              </div>
+                              <div
+                                id="nerd-slope-math"
+                                class="text-primary font-mono text-xs text-right"
+                              >
+                                —
+                              </div>
+
+                              <div></div>
+                              <div
+                                class="text-muted-foreground text-xs"
+                                id="nerd-lbl-slope"
+                                data-n="n"
+                              >
+                                Incline \(\theta = \arctan(P_n'(x))\)
+                              </div>
+                              <div
+                                id="nerd-slope"
+                                class="text-primary font-mono text-xs text-right"
+                              >
+                                —
+                              </div>
+
+                              <div class="flex justify-center">
+                                <input
+                                  type="checkbox"
+                                  checked
+                                  onchange="
+                                    showVelVector = this.checked;
+                                    if (myChart) myChart.update('none');
+                                  "
+                                  class="w-3 h-3 rounded border-input text-primary focus:ring-primary"
+                                />
+                              </div>
+                              <div class="text-muted-foreground text-xs">
+                                Velocity \(\vec{v}\)
+                              </div>
+                              <div
+                                id="nerd-vel"
+                                class="text-primary font-mono text-xs text-right"
+                              >
+                                —
+                              </div>
+
+                              <div class="flex justify-center">
+                                <input
+                                  type="checkbox"
+                                  checked
+                                  onchange="
+                                    showGravVector = this.checked;
+                                    if (myChart) myChart.update('none');
+                                  "
+                                  class="w-3 h-3 rounded border-input text-primary focus:ring-primary"
+                                />
+                              </div>
+                              <div class="text-muted-foreground text-xs">
+                                Gravity \(\vec{a}_{\text{grav}}\)
+                              </div>
+                              <div
+                                id="nerd-grav"
+                                class="text-primary font-mono text-xs text-right"
+                              >
+                                —
+                              </div>
+
+                              <div class="flex justify-center">
+                                <input
+                                  type="checkbox"
+                                  checked
+                                  onchange="
+                                    showEngVector = this.checked;
+                                    if (myChart) myChart.update('none');
+                                  "
+                                  class="w-3 h-3 rounded border-input text-primary focus:ring-primary"
+                                />
+                              </div>
+                              <div class="text-muted-foreground text-xs">
+                                Engine \(\vec{a}_{\text{eng}}\)
+                              </div>
+                              <div
+                                id="nerd-eng"
+                                class="text-primary font-mono text-xs text-right"
+                              >
+                                —
+                              </div>
+
+                              <div class="flex justify-center">
+                                <input
+                                  type="checkbox"
+                                  checked
+                                  onchange="
+                                    showDragVector = this.checked;
+                                    if (myChart) myChart.update('none');
+                                  "
+                                  class="w-3 h-3 rounded border-input text-primary focus:ring-primary"
+                                />
+                              </div>
+                              <div class="text-muted-foreground text-xs">
+                                Drag \(\vec{a}_{\text{drag}}\)
+                              </div>
+                              <div
+                                id="nerd-drag-val"
+                                class="text-primary font-mono text-xs text-right"
+                              >
+                                —
+                              </div>
+
+                              <div></div>
+                              <div class="text-muted-foreground text-xs">
+                                Delta \(\Delta t\)
+                              </div>
+                              <div
+                                id="nerd-dt"
+                                class="text-primary font-mono text-xs text-right"
+                              >
+                                —
+                              </div>
+
                               <div class="col-span-3 h-px bg-border my-1"></div>
-                              <div class="col-span-3 text-center text-[10px] text-muted-foreground font-medium pt-0.5 italic">
-                                \(\sum F=m\cdot a=F_{engine}+F_{gravity}+F_{drag}+F_{rolling}\)
+                              <div
+                                class="col-span-3 text-center text-[10px] text-muted-foreground font-medium pt-0.5 italic"
+                              >
+                                \(\sum F = m \cdot a = F_{engine} + F_{gravity}
+                                + F_{drag} + F_{rolling}\)
                               </div>
                             </div>
                           </aside>
@@ -536,64 +1513,401 @@
                       </div>
                     </div>
 
-                    <!-- Steps Sub-tab -->
-                    <div id="steps" class="sub-tab-content flex flex-col flex-1 min-h-0 overflow-y-auto p-4">
-                      <!-- Header: Copy Equation only (matrix form toggle removed) -->
-                      <div class="flex items-center justify-end mb-4 shrink-0">
-                        <button id="btn-copy-eq-steps"
+                    <!-- Steps Tab -->
+                    <div
+                      id="steps"
+                      class="sub-tab-content flex flex-col flex-1 min-h-0 overflow-y-auto p-4"
+                    >
+                      <!-- Steps sub-header -->
+                      <div
+                        class="flex items-center justify-end mb-4 shrink-0"
+                      >
+                        <!-- Copy equation button (Steps tab) -->
+                        <button
+                          id="btn-copy-eq-steps"
                           class="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                          onclick="copyEquationToClipboard('steps')" title="Copy simplified LaTeX to clipboard">
-                          <i data-lucide="clipboard" class="w-3 h-3"></i>Copy Equation
+                          onclick="copyEquationToClipboard('steps')"
+                          title="Copy simplified LaTeX to clipboard"
+                        >
+                          <i data-lucide="clipboard" class="w-3 h-3"></i>
+                          Copy Equation
                         </button>
                       </div>
-                      <!-- Unified DD table — primary representation (req 4) -->
-                      <div id="steps-table-container" class="mb-6"></div>
-                      <!-- Step-by-step breakdown -->
-                      <div id="steps-container" class="space-y-4"></div>
+
+                      <!-- DD Steps pane -->
+                      <div id="steps-dd-pane" class="space-y-4">
+                        <div id="steps-container" class="space-y-4"></div>
+                      </div>
+
                     </div>
 
-                    <!-- Table Sub-tab -->
-                    <div id="table" class="sub-tab-content flex flex-col flex-1 min-h-0 overflow-y-auto p-4">
+                    <!-- Table Tab -->
+                    <div
+                      id="table"
+                      class="sub-tab-content flex flex-col flex-1 min-h-0 overflow-y-auto p-4"
+                    >
                       <div id="summary-table-container" class="space-y-4"></div>
                     </div>
-
-                  </div><!-- /sub-tabs-root -->
-                </div><!-- /right panel -->
+                  </div>
+                  <!-- /sub-tabs-root -->
+                </div>
+                <!-- /right panel -->
               </div>
-            </div><!-- /calculate -->
+            </div>
+            <!-- /calculate tab -->
 
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- CONCLUSION & TAKEAWAYS TAB                                  -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <div id="conclusion" class="tab-content hidden space-y-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div
+                  class="rounded-xl border bg-card text-card-foreground shadow-sm"
+                >
+                  <div class="flex flex-col space-y-1.5 p-6">
+                    <h3
+                      class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2"
+                    >
+                      <i
+                        data-lucide="check-circle"
+                        class="w-5 h-5 text-primary"
+                      ></i>
+                      Key Takeaways
+                    </h3>
+                  </div>
+                  <div class="p-6 pt-0 text-sm text-muted-foreground space-y-4">
+                    <div class="flex gap-3">
+                      <i
+                        data-lucide="star"
+                        class="w-5 h-5 text-primary shrink-0"
+                      ></i>
+                      <div>
+                        <strong class="text-foreground"
+                          >Polynomial Interpolation is Fundamental.</strong
+                        >
+                        <p>
+                          Newton's Divided Differences provides an elegant and
+                          efficient method to construct interpolating
+                          polynomials from discrete data points. Its key
+                          strength lies in computational efficiency—adding a new
+                          data point requires only \(O(n)\) additional
+                          operations rather than recalculating from scratch.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                      <i
+                        data-lucide="zap"
+                        class="w-5 h-5 text-primary shrink-0"
+                      ></i>
+                      <div>
+                        <strong class="text-foreground"
+                          >Real-World Problem Solving.</strong
+                        >
+                        <p>
+                          From estimating missing sensor measurements to
+                          reconstructing smooth terrain in video games, Newton's
+                          method bridges the gap between sparse data and
+                          continuous functions. It answers a fundamental
+                          question: "What happens between our measured points?"
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                      <i
+                        data-lucide="layers"
+                        class="w-5 h-5 text-primary shrink-0"
+                      ></i>
+                      <div>
+                        <strong class="text-foreground"
+                          >Gateway to Advanced Concepts.</strong
+                        >
+                        <p>
+                          Understanding divided differences opens doors to
+                          numerical differentiation, integration (Newton-Cotes
+                          formulas), and even more sophisticated interpolation
+                          techniques like spline fitting—all essential tools in
+                          computational mathematics.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                      <i
+                        data-lucide="target"
+                        class="w-5 h-5 text-primary shrink-0"
+                      ></i>
+                      <div>
+                        <strong class="text-foreground"
+                          >Practical and Teachable.</strong
+                        >
+                        <p>
+                          Unlike black-box methods, Newton's approach is
+                          transparent and debuggable. Each divided difference
+                          coefficient has a geometric meaning, making it ideal
+                          for educational settings and applications where
+                          understanding the "why" matters as much as the result.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="rounded-xl border bg-card text-card-foreground shadow-sm"
+                >
+                  <div class="flex flex-col space-y-1.5 p-6">
+                    <h3
+                      class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2"
+                    >
+                      <i
+                        data-lucide="lightbulb"
+                        class="w-5 h-5 text-primary"
+                      ></i>
+                      Conclusion
+                    </h3>
+                  </div>
+                  <div class="p-6 pt-0 text-sm text-muted-foreground space-y-4">
+                    <p>
+                      <strong class="text-foreground"
+                        >Why Newton's Divided Differences?</strong
+                      >
+                      This project was chosen because it represents a perfect
+                      intersection of <em>mathematical depth</em> and
+                      <em>practical applicability</em>. Newton's method is:
+                    </p>
+
+                    <ul class="list-disc list-inside space-y-2 text-sm">
+                      <li>
+                        <strong>Mathematically rigorous:</strong> It proves
+                        uniqueness of polynomial interpolation and provides
+                        \(O(n^2)\) computational complexity.
+                      </li>
+                      <li>
+                        <strong>Pedagogically clear:</strong> Each step builds
+                        intuitively on the previous, making the underlying
+                        mathematics transparent.
+                      </li>
+                      <li>
+                        <strong>Practically relevant:</strong> From engineering
+                        simulations to game development, Newton's method solves
+                        real problems efficiently.
+                      </li>
+                      <li>
+                        <strong>Extensible:</strong> It naturally extends to
+                        forward differences, backward differences, and more
+                        advanced interpolation schemes.
+                      </li>
+                    </ul>
+
+                    <p class="pt-2">
+                      By combining an <strong>interactive calculator</strong>,
+                      <strong>step-by-step visualization</strong>, and a
+                      <strong>gamified terrain simulation</strong>, this tool
+                      brings Newton's Divided Differences to life. Users don't
+                      just <em>learn</em> the method—they
+                      <em>experience</em> how it transforms sparse data into
+                      smooth, continuous functions that drive real applications.
+                    </p>
+
+                    <p
+                      class="italic text-xs border-l-2 border-primary/30 pl-3 mt-4"
+                    >
+                      "The beauty of mathematics lies in connecting abstract
+                      theory to the tangible world. Newton's Divided Differences
+                      is a prime example of this connection—a timeless algorithm
+                      still powering modern technology."
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="rounded-xl border bg-card text-card-foreground shadow-sm"
+              >
+                <div class="flex flex-col space-y-1.5 p-6">
+                  <h3
+                    class="text-lg font-semibold leading-none tracking-tight flex items-center gap-2"
+                  >
+                    <i
+                      data-lucide="book-marked"
+                      class="w-5 h-5 text-primary"
+                    ></i>
+                    Further Reading & Applications
+                  </h3>
+                </div>
+                <div class="p-6 pt-0 text-sm text-muted-foreground space-y-4">
+                  <p
+                    class="text-xs font-semibold text-foreground uppercase tracking-wider"
+                  >
+                    Real-World Applications
+                  </p>
+                  <div class="space-y-3">
+                    <div class="pl-4 border-l-2 border-primary/40 space-y-1">
+                      <p class="font-medium text-foreground text-sm">
+                        Climate & Weather Modeling
+                      </p>
+                      <p class="text-xs">
+                        Climate scientists use interpolation to estimate
+                        temperature, pressure, and humidity at unmeasured
+                        locations. Newton's method efficiently reconstructs
+                        continuous atmospheric fields from sparse weather
+                        station data.
+                      </p>
+                    </div>
+
+                    <div class="pl-4 border-l-2 border-primary/40 space-y-1">
+                      <p class="font-medium text-foreground text-sm">
+                        Medical Imaging & Diagnostics
+                      </p>
+                      <p class="text-xs">
+                        MRI, CT, and ultrasound machines rely on polynomial
+                        interpolation to reconstruct smooth 3D images from
+                        discrete scan samples. Newton's method helps deliver
+                        pixel-perfect diagnostics in real-time.
+                      </p>
+                    </div>
+
+                    <div class="pl-4 border-l-2 border-primary/40 space-y-1">
+                      <p class="font-medium text-foreground text-sm">
+                        Financial Modeling & Risk Analysis
+                      </p>
+                      <p class="text-xs">
+                        Stock prices, interest rates, and volatility surfaces
+                        are often sparse. Traders and risk analysts use
+                        interpolation to estimate values at unmeasured price
+                        points, guiding billions in investment decisions.
+                      </p>
+                    </div>
+
+                    <div class="pl-4 border-l-2 border-primary/40 space-y-1">
+                      <p class="font-medium text-foreground text-sm">
+                        Robotics & Motion Planning
+                      </p>
+                      <p class="text-xs">
+                        A robot's trajectory is defined by a series of keyframe
+                        poses. Newton's interpolation smoothly connects these
+                        waypoints, enabling natural, efficient motion without
+                        sudden accelerations or jerky movements.
+                      </p>
+                    </div>
+
+                    <div class="pl-4 border-l-2 border-primary/40 space-y-1">
+                      <p class="font-medium text-foreground text-sm">
+                        Graphics & Animation (Video Games & VFX)
+                      </p>
+                      <p class="text-xs">
+                        Every smooth camera pan, character walk cycle, and
+                        particle trajectory in modern games and films relies on
+                        polynomial interpolation. The terrain simulation in this
+                        tool directly mimics how game engines use Newton's
+                        method to create immersive, continuous worlds.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="pt-4 border-t">
+                    <p
+                      class="text-xs font-semibold text-foreground uppercase tracking-wider mb-2"
+                    >
+                      Mathematical Extensions
+                    </p>
+                    <div class="space-y-2 text-xs">
+                      <p>
+                        <strong>Hermite Interpolation:</strong> Extends Newton's
+                        method to match both function values <em>and</em> their
+                        derivatives, producing smoother curves.
+                      </p>
+                      <p>
+                        <strong>Spline Interpolation:</strong> Uses piecewise
+                        polynomials to avoid the oscillations of high-degree
+                        interpolants, while preserving smoothness.
+                      </p>
+                      <p>
+                        <strong>Chebyshev Polynomials:</strong> When you need to
+                        minimize interpolation error, Chebyshev points (optimal
+                        node locations) can be used with Newton's method.
+                      </p>
+                      <p>
+                        <strong
+                          >Numerical Differentiation & Integration:</strong
+                        >
+                        Once you have the Newton polynomial, derivative and
+                        integral estimates follow naturally, underpinning
+                        methods like Newton-Cotes formulas.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="pt-4 border-t">
+                    <p
+                      class="text-xs font-semibold text-foreground uppercase tracking-wider mb-2"
+                    >
+                      Explore This Tool
+                    </p>
+                    <p class="text-xs">
+                      Use the <strong>Introduction</strong> tab to master the
+                      theory, the <strong>Calculate &amp; Visualize</strong> tab
+                      to experiment interactively (including the car terrain
+                      game), and return here to deepen your understanding of
+                      where this mathematics appears in the real world.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- /conclusion tab -->
           </div>
         </div>
       </main>
     </div>
 
-    <!-- Equation Modal -->
-    <div id="equation-modal" class="fixed inset-0 z-[100] hidden bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-card w-full max-w-4xl border rounded-xl shadow-2xl flex flex-col max-h-[90vh]">
+    <!-- Equation Modal (with copy button) -->
+    <div
+      id="equation-modal"
+      class="fixed inset-0 z-[100] hidden bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-card w-full max-w-4xl border rounded-xl shadow-2xl flex flex-col max-h-[90vh]"
+      >
         <div class="p-4 border-b flex items-center justify-between">
           <h3 class="font-semibold flex items-center gap-2">
-            <i data-lucide="sigma" class="w-5 h-5 text-primary"></i>Full Equation
+            <i data-lucide="sigma" class="w-5 h-5 text-primary"></i> Full
+            Equation
           </h3>
           <div class="flex items-center gap-3">
-            <button id="btn-copy-eq-modal"
+            <!-- Copy button in modal -->
+            <button
+              id="btn-copy-eq-modal"
               class="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors border rounded-md px-2 py-1"
-              onclick="copyEquationToClipboard('modal')" title="Copy LaTeX to clipboard">
-              <i data-lucide="clipboard" class="w-3.5 h-3.5"></i>Copy LaTeX
+              onclick="copyEquationToClipboard('modal')"
+              title="Copy LaTeX to clipboard"
+            >
+              <i data-lucide="clipboard" class="w-3.5 h-3.5"></i>
+              Copy LaTeX
             </button>
-            <button onclick="closeEquationModal()" class="text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              onclick="closeEquationModal()"
+              class="text-muted-foreground hover:text-foreground transition-colors"
+            >
               <i data-lucide="x" class="w-5 h-5"></i>
             </button>
           </div>
         </div>
-        <div class="p-6 overflow-x-auto whitespace-nowrap mj-container flex items-center justify-start">
+        <div
+          class="p-6 overflow-x-auto whitespace-nowrap mj-container flex items-center justify-start"
+        >
           <span id="eq-modal-buf1" class="mj-buffer">\[P_n(x) = \dots\]</span>
           <span id="eq-modal-buf2" class="mj-buffer mj-hidden"></span>
         </div>
       </div>
     </div>
 
-    <!-- Copy toast -->
-    <div id="copy-toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] hidden items-center gap-2 bg-foreground text-background text-sm font-medium px-4 py-2 rounded-full shadow-lg">
+    <!-- Toast notification for copy feedback -->
+    <div
+      id="copy-toast"
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] hidden items-center gap-2 bg-foreground text-background text-sm font-medium px-4 py-2 rounded-full shadow-lg transition-opacity"
+    >
       <i data-lucide="check" class="w-4 h-4"></i>
       <span id="copy-toast-msg">Copied to clipboard!</span>
     </div>
