@@ -40,14 +40,35 @@ MAT/
 
 ---
 
-## Running the App
+## Getting Started & Running the App
 
-To run the application locally, ensure you have the required R packages installed (`shiny`, `DT`, `htmltools`), then execute:
+You can run this application in two ways:
 
+### Option 1: Run Locally (Development)
+1. **Download/Clone** this repository to your machine.
+2. Ensure you have the required R packages installed:
+   ```r
+   install.packages(c("shiny", "DT", "htmltools"))
+   ```
+3. Open the project folder in **RStudio**.
+4. Open the `app.R` file and click the **"Run App"** button at the top of the editor, or execute:
+   ```r
+   shiny::runApp()
+   ```
+
+### Option 2: Run Directly from GitHub
+You can launch the latest version of the app directly from the R console without manual downloading:
 ```r
-# Open the project in RStudio and run:
-shiny::runApp()
+if (!require("shiny")) install.packages("shiny")
+shiny::runGitHub("MAT", "sethonne")
 ```
+
+---
+
+## Quick Setup Script
+For a completely automated setup, you can use the included `setup.R` script:
+1. Open `setup.R`.
+2. Run the script to automatically install dependencies and launch the app.
 
 ---
 
